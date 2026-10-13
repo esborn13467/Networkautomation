@@ -67,7 +67,7 @@ def status():
             a = h[0]["interfaces"][0]["available"]
             print(f"{n:10} SNMP", {"0": "unknown (wait a minute)", "1": "AVAILABLE", "2": "UNAVAILABLE"}[a])
         else:
-            it = api("item.get", {"hostids": h[0]["hostid"], "search": {"key_": "icmpping"},
+            it = api("item.get", {"hostids": h[0]["hostid"], "filter": {"key_": "icmpping"},
                                   "output": ["lastvalue"]})
             v = it[0]["lastvalue"] if it else "no item yet"
             print(f"{n:10} ping", {"1": "UP", "0": "DOWN"}.get(v, v))

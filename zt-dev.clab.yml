@@ -11,6 +11,8 @@ topology:
     acc1: {kind: arista_ceos}
     edge:
       kind: linux
+      binds:
+        - ./edge-fw.sh:/tmp/edge-fw.sh
       exec:
         - ip addr add 10.10.0.2/30 dev eth1
         - ip addr add 10.10.40.1/24 dev eth2
@@ -21,12 +23,14 @@ topology:
         - ip route add 10.10.20.0/24 via 10.10.0.1
         - ip route add 10.10.30.0/24 via 10.10.0.1
         - ip route add 10.10.99.0/24 via 10.10.0.1
+        - sh /tmp/edge-fw.sh
     web:
       kind: linux
       exec:
         - ip addr add 10.10.40.10/24 dev eth1
         - ip link set eth1 up
         - ip route replace default via 10.10.40.1
+        - sh -c "mkdir -p /srv/www; echo ZT-DMZ-web-server > /srv/www/index.html; cd /srv/www; nohup python3 -m http.server 80 > /dev/null 2>&1 &"
     radius:
       kind: linux
       binds:
@@ -43,9 +47,18 @@ topology:
         - ip addr add 10.10.10.20/24 dev eth1
         - ip link set eth1 up
         - ip route replace default via 10.10.10.1
-    admin-pc: {kind: linux, exec: ["ip link set eth1 up"]}
-    staff-pc: {kind: linux, exec: ["ip link set eth1 up"]}
-    guest-pc: {kind: linux, exec: ["ip link set eth1 up"]}
+    admin-pc:
+      kind: linux
+      binds: ["./client/admin-pc.conf:/etc/wpa.conf"]
+      exec: ["ip link set eth1 up", "sh -c \"echo nameserver 1.1.1.1 > /etc/resolv.conf\""]
+    staff-pc:
+      kind: linux
+      binds: ["./client/staff-pc.conf:/etc/wpa.conf"]
+      exec: ["ip link set eth1 up", "sh -c \"echo nameserver 1.1.1.1 > /etc/resolv.conf\""]
+    guest-pc:
+      kind: linux
+      binds: ["./client/guest-pc.conf:/etc/wpa.conf"]
+      exec: ["ip link set eth1 up", "sh -c \"echo nameserver 1.1.1.1 > /etc/resolv.conf\""]
   links:
     - endpoints: ["core:eth1", "acc1:eth1"]
     - endpoints: ["core:eth3", "edge:eth1"]
