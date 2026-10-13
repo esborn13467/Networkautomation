@@ -1,0 +1,6 @@
+name: zt-test
+topology:
+  nodes:
+    sw1:
+      kind: arista_ceos
+      image: ceos:4.36.2F

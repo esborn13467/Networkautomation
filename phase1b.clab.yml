@@ -1,0 +1,26 @@
+name: zt-1b
+topology:
+  nodes:
+    sw1:
+      kind: arista_ceos
+      image: ceos:4.36.2F
+    radius:
+      kind: linux
+      image: zt-node:1
+      binds:
+        - ./radius/clients.conf:/etc/freeradius/3.0/clients.conf
+        - ./radius/users:/etc/freeradius/3.0/users
+      exec:
+        - ip addr add 10.10.10.5/24 dev eth1
+        - ip link set eth1 up
+        - sh -c "nohup freeradius -X > /tmp/radius.log 2>&1 &"
+    client:
+      kind: linux
+      image: zt-node:1
+      binds:
+        - ./client/wpa.conf:/etc/wpa.conf
+      exec:
+        - ip link set eth1 up
+  links:
+    - endpoints: ["sw1:eth1", "radius:eth1"]
+    - endpoints: ["sw1:eth2", "client:eth1"]

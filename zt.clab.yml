@@ -1,0 +1,58 @@
+name: zt
+topology:
+  kinds:
+    arista_ceos:
+      image: ceos:4.36.2F
+    linux:
+      image: zt-node:3
+  nodes:
+    core:  {kind: arista_ceos}
+    acc1:  {kind: arista_ceos}
+    acc2:  {kind: arista_ceos}
+    edge:
+      kind: linux
+      exec:
+        - ip addr add 10.10.0.2/30 dev eth1
+        - ip addr add 10.10.40.1/24 dev eth2
+        - ip link set eth1 up
+        - ip link set eth2 up
+        - sysctl -w net.ipv4.ip_forward=1
+        - ip route add 10.10.10.0/24 via 10.10.0.1
+        - ip route add 10.10.20.0/24 via 10.10.0.1
+        - ip route add 10.10.30.0/24 via 10.10.0.1
+        - ip route add 10.10.99.0/24 via 10.10.0.1
+    web:
+      kind: linux
+      exec:
+        - ip addr add 10.10.40.10/24 dev eth1
+        - ip link set eth1 up
+        - ip route replace default via 10.10.40.1
+    radius:
+      kind: linux
+      binds:
+        - ./radius/clients.conf:/etc/freeradius/3.0/clients.conf
+        - ./radius/users:/etc/freeradius/3.0/users
+      exec:
+        - ip addr add 10.10.10.5/24 dev eth1
+        - ip link set eth1 up
+        - ip route replace default via 10.10.10.1
+        - sh -c "nohup freeradius -X > /tmp/radius.log 2>&1 &"
+    siem:
+      kind: linux
+      exec:
+        - ip addr add 10.10.10.20/24 dev eth1
+        - ip link set eth1 up
+        - ip route replace default via 10.10.10.1
+    admin-pc:  {kind: linux, exec: ["ip link set eth1 up"]}
+    staff-pc:  {kind: linux, exec: ["ip link set eth1 up"]}
+    guest-pc:  {kind: linux, exec: ["ip link set eth1 up"]}
+  links:
+    - endpoints: ["core:eth1", "acc1:eth1"]
+    - endpoints: ["core:eth2", "acc2:eth1"]
+    - endpoints: ["core:eth3", "edge:eth1"]
+    - endpoints: ["edge:eth2", "web:eth1"]
+    - endpoints: ["acc1:eth2", "admin-pc:eth1"]
+    - endpoints: ["acc1:eth3", "staff-pc:eth1"]
+    - endpoints: ["acc2:eth2", "guest-pc:eth1"]
+    - endpoints: ["acc2:eth3", "radius:eth1"]
+    - endpoints: ["acc2:eth4", "siem:eth1"]
