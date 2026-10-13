@@ -14,7 +14,7 @@ sudo containerlab deploy -t zt-dev.clab.yml --max-workers 1 || exit 1
 echo "== 2/6 waiting for switches"
 for sw in core acc1; do
   echo -n "   $sw "
-  until docker exec clab-zt-$sw Cli -p 15 -c "show version" >/dev/null 2>&1; do echo -n .; sleep 5; done
+  until docker exec clab-zt-$sw Cli -p 15 -c "show version" >/dev/null 2>&1 && timeout 3 bash -c "echo > /dev/tcp/clab-zt-$sw/22" 2>/dev/null; do echo -n .; sleep 5; done
   echo " up"
 done
 
