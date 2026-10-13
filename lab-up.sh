@@ -26,6 +26,7 @@ apply core snmp.cfg
 apply core policy.cfg
 apply acc1 acc1.cfg
 apply acc1 snmp.cfg
+apply acc1 span.cfg
 
 echo "== 4/6 logging in the three PCs (802.1X)"
 for pc in admin-pc staff-pc guest-pc; do
