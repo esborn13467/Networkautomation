@@ -49,6 +49,13 @@ print("PASS off-hours: flag set on the 2 attack windows of staff-pc only")
 assert all(r["label"] == "" for r in rows)
 print("PASS input rows left untouched")
 
+# ---- 5b. after-effect: attack ends at 40.5 s, traces until 44.5 s -> window 4 dropped, window 5 normal ----
+k, d = label_rows([row(w, GUEST) for w in (3, 4, 5)], T0, "bruteforce", GUEST, T0 + 10.5, T0 + 40.5, tail=4)
+assert [(r["label"]) for r in k] == [1, 0] and d == 1, (k, d)
+k, d = label_rows([row(4, GUEST)], T0, "bruteforce", GUEST, T0 + 10, T0 + 39.9, tail=0)
+assert k[0]["label"] == 0 and d == 0
+print("PASS after-effect: window with late rejects dropped; without a tail it would be labelled normal")
+
 # ---- 6. agent is valid Python and refuses targets outside 10.10.0.0/16 ----
 path = tempfile.mktemp(suffix=".py")
 open(path, "w").write(AGENT)
@@ -60,4 +67,16 @@ r = subprocess.run([sys.executable, path, "normal", "1", "10.10.40.10", "10.10.3
                    capture_output=True, text=True)
 assert "refusing non-lab target" in r.stderr
 print("PASS agent compiles and refuses non-lab targets (internet, home LAN, lab management net)")
+r = subprocess.run([sys.executable, path, "bruteforce", "1", "8.8.8.8", "5", "AA-BB-CC-DD-EE-FF", "s", "10.10.10.11", "bob"],
+                   capture_output=True, text=True)
+assert "refusing non-lab target" in r.stderr
+r = subprocess.run([sys.executable, path, "bruteforce", "1", "10.10.10.5", "5", "AA-BB-CC-DD-EE-FF", "s", "1.2.3.4", "bob"],
+                   capture_output=True, text=True)
+assert "refusing non-lab target" in r.stderr
+print("PASS brute force refuses a non-lab RADIUS server or NAS address")
+
+# ---- 7. the RADIUS secret is read from the project file, not hard-coded ----
+from zt_traffic import radius_secret
+assert radius_secret() and " " not in radius_secret()
+print("PASS RADIUS secret read from radius/clients.conf")
 print("\nALL TESTS PASSED")

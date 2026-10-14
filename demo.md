@@ -155,7 +155,7 @@ Terminal B, start the detection pipeline. It captures the mirrored traffic, comp
 python zt_pipeline.py
 ```
 
-Terminal A, start normal background traffic on all three PCs for 15 minutes:
+Terminal A, start normal background traffic on all three PCs for 15 minutes (✅ command ready):
 
 ```bash
 python zt_traffic.py background --seconds 900
@@ -207,10 +207,11 @@ Port scan from guest-pc:
 python zt_traffic.py attack --mode portscan --seconds 40
 ```
 
-or brute force against RADIUS:
+or brute force against RADIUS (✅ attack command ready; about 5 wrong passwords per second for guest-pc's port):
 
 ```bash
 python zt_traffic.py attack --mode bruteforce --seconds 40
+docker exec clab-zt-radius grep -c "Sent Access-Reject" /tmp/radius.log   # rejects climbing
 ```
 
 **Expected:** score crosses the line → classified `portscan` / `bruteforce` → **QUARANTINE**.

@@ -1,11 +1,12 @@
 #!/usr/bin/env bash
 # Collects the Phase 3 datasets: 4 x 10-minute normal runs, then 5 runs of each attack
-# at five different intensities. About 65 minutes. Output: data/*.csv, log in data/collect.log
+# at five different intensities. About 70 minutes. Output: data/*.csv
+# Partial re-run example: SKIP_NORMAL=1 MODES="bruteforce" ./collect_datasets.sh
 cd "$(dirname "$0")"
 source venv/bin/activate
 docker stop zbx-web zbx-server zbx-db >/dev/null 2>&1   # free RAM while capturing
 
-for i in 1 2 3 4; do
+[ -z "$SKIP_NORMAL" ] && for i in 1 2 3 4; do
   echo "=== normal run $i/4 (600 s)"
   python zt_traffic.py run --mode normal --seconds 600 --out data/normal_0$i.csv | grep ' packets -> '
 done
@@ -15,8 +16,9 @@ declare -A RATES=(
   [portscan]="10 20 30 40 50"
   [insider]="500000 1000000 1500000 2000000 2500000"
   [offhours]="0 0 0 0 0"
+  [bruteforce]="1 2 3 5 8"
 )
-for mode in dos portscan insider offhours; do
+for mode in ${MODES:-dos portscan insider offhours bruteforce}; do
   i=0
   for rate in ${RATES[$mode]}; do
     i=$((i+1))
