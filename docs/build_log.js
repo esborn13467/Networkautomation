@@ -448,7 +448,6 @@ c.push(
 c.push(
   H1("10. Remaining Work"),
   H2("Phase 3 (detection and response)"),
-  N("**Alerts** - JSON alert and incident log, pushed to Zabbix.", "rem"),
   N("**Orchestrator** - one process that collects, scores, classifies, responds and timestamps each step to measure response time.", "rem"),
   H2("Phase 4 (validation and report)"),
   B("Run each attack end to end several times; capture ACL counters, logs, Zabbix alerts and timing."),
