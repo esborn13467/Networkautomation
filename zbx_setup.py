@@ -13,7 +13,7 @@ def api(method, params):
     if TOKEN:
         headers["Authorization"] = f"Bearer {TOKEN}"
     body = json.dumps({"jsonrpc": "2.0", "method": method, "params": params, "id": 1}).encode()
-    with urllib.request.urlopen(urllib.request.Request(URL, body, headers), timeout=20) as r:
+    with urllib.request.urlopen(urllib.request.Request(URL, body, headers), timeout=90) as r:   # a fresh Zabbix is slow
         out = json.load(r)
     if "error" in out:
         raise RuntimeError(f"{method}: {out['error'].get('data') or out['error']}")

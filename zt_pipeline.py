@@ -76,7 +76,7 @@ class PipelineOrchestrator:
         self.mac_to_ip = {}
         self.t0 = None
         self.procs = []
-        self.zbx_ok = True
+        self.zbx_retry_at = 0.0         # Zabbix unreachable: try again after this time
 
     # ----- inputs -----
     def _stream_packets(self):
@@ -117,15 +117,17 @@ class PipelineOrchestrator:
         return pd.DataFrame(rows)
 
     def push_scores(self, df):
-        if not self.zbx_ok:
+        if time.time() < self.zbx_retry_at:
             return
         try:
             import zt_zbx_push as zbx
-            zbx.send([(f"zt-{pc_for_ip(r.host_ip)}", "zt.anomaly.score", round(float(r.score), 4))
-                      for r in df.itertuples()])
+            info = zbx.send([(f"zt-{pc_for_ip(r.host_ip)}", "zt.anomaly.score", round(float(r.score), 4))
+                             for r in df.itertuples()])
+            if "failed: 0" not in info:
+                raise RuntimeError(info)        # e.g. hosts not registered in Zabbix yet
         except Exception as e:
-            self.zbx_ok = False
-            print(f"   (Zabbix unreachable, scores not pushed: {e})")
+            self.zbx_retry_at = time.time() + 60
+            print(f"   (Zabbix not updated, retrying in 60 s: {e})")
 
     def handle(self, row, window_end):
         pc = pc_for_ip(row["host_ip"])
