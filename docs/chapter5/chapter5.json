@@ -1,0 +1,848 @@
+[
+ {
+  "k": "h1",
+  "t": "Chapter 5: Results and Discussion"
+ },
+ {
+  "k": "h2",
+  "t": "5.1 Introduction"
+ },
+ {
+  "k": "p",
+  "t": "This chapter presents the results of testing the Zero Trust network and its detection and response layer, following the test plan in Section 3.6. It first reports the functional tests of access control and segmentation, then the datasets collected for the model, the detection results of the Isolation Forest, the automated response tests, the end-to-end test of the complete pipeline and the monitoring results from Zabbix. The results are then checked against the functional requirements in Table 3.2 and discussed in relation to the literature reviewed in Chapter 2. All the numbers in this chapter come from the result files kept with the project (the results folder, the data folder and the incident log), so every table can be traced back to the run that produced it."
+ },
+ {
+  "k": "h2",
+  "t": "5.2 Functional Testing of the Zero Trust Network"
+ },
+ {
+  "k": "h3",
+  "t": "5.2.1 Authentication and Dynamic VLAN Assignment"
+ },
+ {
+  "k": "p",
+  "t": "Each of the three users logged in with 802.1X (PEAP with MSCHAPv2), and FreeRADIUS returned the VLAN for the user’s role. The access switch showed all three sessions as authorized, each in its own VLAN. A login with a wrong password was then attempted from guest-pc: FreeRADIUS answered with an Access-Reject, the port changed to the FAILED state with no VLAN, and guest-pc could not even reach its own gateway. After the port was bounced and the correct password used, guest-pc was authorized again in VLAN 30 and reached the DMZ web server. The results are summarized in Table 5.1."
+ },
+ {
+  "k": "table",
+  "caption": "Table 5.1: 802.1X authentication results on the access switch (acc1)",
+  "head": [
+   "Port",
+   "User",
+   "Test",
+   "Switch state",
+   "Result"
+  ],
+  "rows": [
+   [
+    "Et2",
+    "bob (admin)",
+    "Correct password",
+    "SUCCESS, VLAN 10 ADMIN",
+    "Access as admin"
+   ],
+   [
+    "Et3",
+    "alice (staff)",
+    "Correct password",
+    "SUCCESS, VLAN 20 STAFF",
+    "Access as staff"
+   ],
+   [
+    "Et4",
+    "guest1 (guest)",
+    "Correct password",
+    "SUCCESS, VLAN 30 GUEST",
+    "Access as guest"
+   ],
+   [
+    "Et4",
+    "guest1 (guest)",
+    "Wrong password",
+    "FAILED, no VLAN",
+    "No network; 100% ping loss to gateway"
+   ],
+   [
+    "Et4",
+    "guest1 (guest)",
+    "Port bounced, correct password",
+    "SUCCESS, VLAN 30 GUEST",
+    "Access restored"
+   ]
+  ],
+  "widths": [
+   0.55,
+   1.15,
+   1.6,
+   1.75,
+   1.85
+  ]
+ },
+ {
+  "k": "h3",
+  "t": "5.2.2 Segmentation and the DMZ"
+ },
+ {
+  "k": "p",
+  "t": "The six self-tests run by lab-up.sh after every rebuild check the segment policy from the user side, and all six passed on every rebuild. Guests reached the DMZ web server and the internet but not the RADIUS server or the staff PC; staff reached the RADIUS server; and the DMZ web server could not start a connection to the internal network. The hit counters on the ZT_POLICY entries rose with each blocked attempt, which shows that the core switch, and not a missing route, did the blocking. On the edge firewall the DROP counter for DMZ-to-internal traffic rose in the same way. Table 5.2 lists the checks."
+ },
+ {
+  "k": "table",
+  "caption": "Table 5.2: Segmentation self-tests (lab-up.sh) and the rule that decides each one",
+  "head": [
+   "Test",
+   "Expected",
+   "Result",
+   "Enforced by"
+  ],
+  "rows": [
+   [
+    "guest-pc to DMZ web server (HTTP)",
+    "Reach",
+    "PASS",
+    "edge: internal to DMZ on TCP 80 only"
+   ],
+   [
+    "guest-pc to internet (HTTP)",
+    "Reach",
+    "PASS",
+    "edge: internal to internet, NAT"
+   ],
+   [
+    "guest-pc to RADIUS (10.10.10.5)",
+    "Block",
+    "PASS",
+    "ZT_POLICY line 50"
+   ],
+   [
+    "guest-pc to staff PC (10.10.20.50)",
+    "Block",
+    "PASS",
+    "ZT_POLICY line 60"
+   ],
+   [
+    "staff-pc to RADIUS",
+    "Reach",
+    "PASS",
+    "ZT_POLICY line 80 (permit)"
+   ],
+   [
+    "DMZ web server to RADIUS",
+    "Block",
+    "PASS",
+    "edge: DMZ to internal DROP"
+   ]
+  ],
+  "widths": [
+   2.15,
+   0.8,
+   0.7,
+   2.85
+  ]
+ },
+ {
+  "k": "h3",
+  "t": "5.2.3 Collection and Feature Extraction"
+ },
+ {
+  "k": "p",
+  "t": "The offline tests of the Python components passed in full: 10 checks for the collector (test_collector.py), 9 for the traffic generator (test_traffic.py), 10 for the response engine (test_respond.py) and 3 for the Zabbix sender (test_zbx_push.py). They include a check that the fast packet reader built on the struct module returns exactly the same fields as Scapy on a sample capture, and checks that the traffic generator refuses any target outside the lab network."
+ },
+ {
+  "k": "p",
+  "t": "Testing also exposed a fault that the functional tests had missed. In the first dataset collection the insider attack produced only about 30 packets per window instead of megabytes. The cause was an MTU mismatch: the Linux containers used 9,500-byte frames, while the cEOS switches route with an MTU of 1,500, so large replies were dropped at the core. Pings and small web pages fitted inside 1,500 bytes, which is why nothing had looked wrong before. After all lab interfaces were set to an MTU of 1,500, a 20 MB download ran at about 6 MB/s, and every dataset was collected again. The first datasets were kept as evidence of the fault but were not used."
+ },
+ {
+  "k": "h2",
+  "t": "5.3 Datasets"
+ },
+ {
+  "k": "p",
+  "t": "Four normal runs of ten minutes and five runs of each attack, at five intensities, were collected after the MTU fix. Table 5.3 summarizes them. The windows of attack runs that are not attack windows belong to the other two PCs, or to the attacker before and after its attack, and are labeled normal. For comparison, 99% of normal windows have at most 536 packets, 430 kB, 1 destination port and 48 new connections per minute, and no normal window has a single failed login."
+ },
+ {
+  "k": "table",
+  "caption": "Table 5.3: Datasets collected (median values are for the attack windows, or for all windows of the normal runs)",
+  "head": [
+   "Class",
+   "Runs",
+   "Windows",
+   "Attack windows",
+   "Median packets",
+   "Median bytes",
+   "Median ports",
+   "Median failed logins",
+   "Median conn./min"
+  ],
+  "rows": [
+   [
+    "Normal",
+    "4",
+    "594",
+    "0",
+    "22",
+    "1,876",
+    "1",
+    "0",
+    "12"
+   ],
+   [
+    "DoS",
+    "5",
+    "83",
+    "20",
+    "8,340",
+    "836,670",
+    "1",
+    "0",
+    "4,632"
+   ],
+   [
+    "Port scan",
+    "5",
+    "72",
+    "20",
+    "376",
+    "25,829",
+    "296",
+    "0",
+    "1,779"
+   ],
+   [
+    "Brute force",
+    "5",
+    "68",
+    "20",
+    "21",
+    "1,792",
+    "1",
+    "30",
+    "12"
+   ],
+   [
+    "Insider",
+    "5",
+    "75",
+    "20",
+    "12,215",
+    "15,528,831",
+    "1",
+    "0",
+    "24"
+   ],
+   [
+    "Off-hours",
+    "5",
+    "69",
+    "20",
+    "14",
+    "1,190",
+    "1",
+    "0",
+    "12"
+   ]
+  ],
+  "widths": [
+   0.85,
+   0.5,
+   0.75,
+   0.75,
+   0.75,
+   0.85,
+   0.6,
+   0.75,
+   0.7
+  ]
+ },
+ {
+  "k": "p",
+  "t": "Every attack type differs clearly from normal traffic in at least one feature: DoS in its packets and connection rate, port scan in its destination ports, brute force in its failed logins and insider data theft in its bytes. The off-hours class is normal traffic in every feature except the off-hours flag, which is what defines it."
+ },
+ {
+  "k": "h2",
+  "t": "5.4 Detection Results"
+ },
+ {
+  "k": "h3",
+  "t": "5.4.1 Overall Performance"
+ },
+ {
+  "k": "p",
+  "t": "The detector was evaluated with 5-fold leave-one-run-out cross-validation (Section 3.6.3). Over the five folds, 100 attack windows and 917 normal windows were scored. Three designs were compared: the Isolation Forest trained on normal traffic only, the Isolation Forest trained on unlabeled mixed traffic in which about 9% of the windows were attacks, and the hybrid design chosen for the system, which adds one policy rule (five or more failed logins in a window) to the mixed model. Table 5.4 gives the results, calculated with Equations 3.1 to 3.5."
+ },
+ {
+  "k": "table",
+  "caption": "Table 5.4: Detection results of the three designs (5 folds, 100 attack and 917 normal windows)",
+  "head": [
+   "Design",
+   "TP",
+   "FN",
+   "FP",
+   "TN",
+   "Accuracy",
+   "Precision",
+   "Detection rate",
+   "F1",
+   "FPR",
+   "ROC-AUC"
+  ],
+  "rows": [
+   [
+    "IF, normal only",
+    "47",
+    "53",
+    "5",
+    "912",
+    "94.3%",
+    "0.904",
+    "47%",
+    "0.618",
+    "0.5%",
+    "0.807"
+   ],
+   [
+    "IF, mixed",
+    "90",
+    "10",
+    "10",
+    "907",
+    "98%",
+    "0.900",
+    "90%",
+    "0.900",
+    "1.1%",
+    "0.990"
+   ],
+   [
+    "Hybrid (chosen)",
+    "100",
+    "0",
+    "10",
+    "907",
+    "99%",
+    "0.909",
+    "100%",
+    "0.952",
+    "1.1%",
+    "0.990"
+   ]
+  ],
+  "widths": [
+   1.2,
+   0.4,
+   0.4,
+   0.4,
+   0.45,
+   0.7,
+   0.7,
+   0.75,
+   0.5,
+   0.5,
+   0.6
+  ]
+ },
+ {
+  "k": "p",
+  "t": "Trained on normal traffic only, the Isolation Forest raised few false alarms (0.5%) but found fewer than half of the attack windows (47%). Trained on mixed traffic it found 90% of them with a false positive rate of 1.1%, and its ROC-AUC rose from 0.807 to 0.990. The hybrid design found every attack window (100%) without any extra false alarm, giving an accuracy of 99% and an F1-score of 0.952. The ROC-AUC of the hybrid design is that of its Isolation Forest score, because the rule gives a yes or no answer and has no score."
+ },
+ {
+  "k": "fig",
+  "file": "docs/chapter5/figures/fig5_1_detection_by_type.png",
+  "width": 6.3,
+  "caption": "Figure 5.1: Detection rate by attack type for the three designs"
+ },
+ {
+  "k": "p",
+  "t": "Figure 5.1 breaks the detection rate down by attack type. DoS and insider data theft were detected by every design, because they change several features strongly at once. The normal-only model missed every brute-force and off-hours window and most port-scan windows."
+ },
+ {
+  "k": "h3",
+  "t": "5.4.2 Detection by Attack Intensity"
+ },
+ {
+  "k": "table",
+  "caption": "Table 5.5: Detection rate per run, from the weakest to the strongest intensity",
+  "head": [
+   "Attack",
+   "Intensity",
+   "IF, normal only",
+   "IF, mixed",
+   "Hybrid"
+  ],
+  "rows": [
+   [
+    "DoS",
+    "40 requests/s",
+    "75%",
+    "100%",
+    "100%"
+   ],
+   [
+    "DoS",
+    "60 requests/s",
+    "100%",
+    "100%",
+    "100%"
+   ],
+   [
+    "DoS",
+    "80 requests/s",
+    "100%",
+    "100%",
+    "100%"
+   ],
+   [
+    "DoS",
+    "100 requests/s",
+    "100%",
+    "100%",
+    "100%"
+   ],
+   [
+    "DoS",
+    "120 requests/s",
+    "100%",
+    "100%",
+    "100%"
+   ],
+   [
+    "Port scan",
+    "10 ports/s",
+    "25%",
+    "100%",
+    "100%"
+   ],
+   [
+    "Port scan",
+    "20 ports/s",
+    "50%",
+    "100%",
+    "100%"
+   ],
+   [
+    "Port scan",
+    "30 ports/s",
+    "0%",
+    "100%",
+    "100%"
+   ],
+   [
+    "Port scan",
+    "40 ports/s",
+    "50%",
+    "100%",
+    "100%"
+   ],
+   [
+    "Port scan",
+    "50 ports/s",
+    "75%",
+    "100%",
+    "100%"
+   ],
+   [
+    "Brute force",
+    "1 attempts/s",
+    "0%",
+    "0%",
+    "100%"
+   ],
+   [
+    "Brute force",
+    "2 attempts/s",
+    "0%",
+    "0%",
+    "100%"
+   ],
+   [
+    "Brute force",
+    "3 attempts/s",
+    "0%",
+    "50%",
+    "100%"
+   ],
+   [
+    "Brute force",
+    "5 attempts/s",
+    "0%",
+    "100%",
+    "100%"
+   ],
+   [
+    "Brute force",
+    "8 attempts/s",
+    "0%",
+    "100%",
+    "100%"
+   ],
+   [
+    "Insider",
+    "0.5 MB/s",
+    "100%",
+    "100%",
+    "100%"
+   ],
+   [
+    "Insider",
+    "1 MB/s",
+    "100%",
+    "100%",
+    "100%"
+   ],
+   [
+    "Insider",
+    "1.5 MB/s",
+    "100%",
+    "100%",
+    "100%"
+   ],
+   [
+    "Insider",
+    "2 MB/s",
+    "100%",
+    "100%",
+    "100%"
+   ],
+   [
+    "Insider",
+    "2.5 MB/s",
+    "100%",
+    "100%",
+    "100%"
+   ]
+  ],
+  "widths": [
+   1.3,
+   1.3,
+   1.3,
+   1.3,
+   1.3
+  ]
+ },
+ {
+  "k": "p",
+  "t": "Table 5.5 shows the detection rate of every run. The off-hours runs have no intensity and are left out; all five were missed by the normal-only model and fully detected by the other two designs. The mixed model detected the weakest DoS and port-scan runs that the normal-only model partly missed. The one weakness of the mixed model was slow password guessing: at one or two attempts per second, about 10 to 20 failed logins per window, none of the windows were flagged, at three attempts per second half of them were, and from five attempts per second all of them were. In those windows every feature except failed_logins looks normal, so the anomaly score only reaches the level of a busy normal window. Lowering the threshold enough to catch them would have raised the false positive rate to about 5 to 10%. The brute-force rule closes this gap: it fired on every brute-force window at every speed and on no normal window."
+ },
+ {
+  "k": "h3",
+  "t": "5.4.3 Score Distribution and Confusion Matrix"
+ },
+ {
+  "k": "fig",
+  "file": "docs/chapter5/figures/fig5_2_score_distribution.png",
+  "width": 6.3,
+  "caption": "Figure 5.2: Anomaly score of every test window with the tuned threshold (mixed training)"
+ },
+ {
+  "k": "p",
+  "t": "Figure 5.2 plots the anomaly score of every test window. Normal windows form a dense band below the threshold of -0.017 (the average over the five folds), with a thin tail of busy windows near it; these produce the false alarms. DoS, port-scan, insider and off-hours windows lie well above the threshold. The brute-force windows spread on both sides of it, which matches the intensity results in Table 5.5."
+ },
+ {
+  "k": "fig",
+  "file": "docs/chapter5/figures/fig5_3_confusion_matrix.png",
+  "width": 3.6,
+  "caption": "Figure 5.3: Confusion matrix of the hybrid detector over the five folds"
+ },
+ {
+  "k": "p",
+  "t": "Figure 5.3 shows the confusion matrix of the hybrid detector. All 100 attack windows were detected and 907 of the 917 normal windows were left alone. All 10 false positives were windows of admin-pc or staff-pc that contained one or more downloads of the 200 kB test file, about 213 kB and 250 packets compared with a median of 1.9 kB and 22 packets for normal windows. Such downloads are part of normal behavior but rare, so the model treats them as unusual. Because their features match no attack type, they are classified as unclassified and lead only to an alert, as discussed in Section 5.5.2. (The held-out normal run normal_04 is scored by the model of every fold, so a window in it can appear in more than one fold.)"
+ },
+ {
+  "k": "h3",
+  "t": "5.4.4 Attack Classification"
+ },
+ {
+  "k": "p",
+  "t": "Once a window is flagged, the response engine decides the attack type from its features, in the order of Table 4.4. Applied to all 100 labeled attack windows, the classifier named the correct type for 100% of them: 20 out of 20 for each of DoS, port scan, brute force, insider and off-hours. Each limit in the classifier is far above normal traffic, so a normal window that is flagged by mistake almost always ends up as unclassified, and an unclassified window only raises an alert."
+ },
+ {
+  "k": "h2",
+  "t": "5.5 Automated Response Results"
+ },
+ {
+  "k": "h3",
+  "t": "5.5.1 Individual Response Actions"
+ },
+ {
+  "k": "p",
+  "t": "Each response action was first tested on its own from the command line (zt_respond.py) on the live lab. Table 5.6 gives the results. The block took effect at once: guest-pc lost all access while staff-pc was not affected, and the new deny entry counted the dropped packets. For quarantine, FreeRADIUS was told to place the user in VLAN 99 and the access port was bounced; the PC logged in again on its own and was in the quarantine VLAN 1.1 seconds after the bounce. The ZT_POLICY counters then showed exactly the access Table 4.2 allows a quarantined host: one packet permitted to the RADIUS server on UDP 1812, two permitted to the SIEM, and 11 denied, covering the web server, the staff PC, the internet, the gateway and a ping to the RADIUS server. Disabling an account left the port in the FAILED state, and every action could be undone."
+ },
+ {
+  "k": "table",
+  "caption": "Table 5.6: Response actions tested individually on the live lab",
+  "head": [
+   "Action",
+   "Command",
+   "Observed result",
+   "Time"
+  ],
+  "rows": [
+   [
+    "Block IP",
+    "block 10.10.30.50",
+    "ZT_POLICY line 71 deny ip host 10.10.30.50 any, 5 packets matched in the first second; guest-pc HTTP 000, staff-pc HTTP 200",
+    "0.1 s on the switch (0.8 s including SSH login)"
+   ],
+   [
+    "Repeat block",
+    "block 10.10.30.50",
+    "Ignored: host already blocked",
+    "-"
+   ],
+   [
+    "Protected address",
+    "block 10.10.10.5",
+    "Refused: infrastructure address",
+    "-"
+   ],
+   [
+    "Quarantine",
+    "quarantine guest-pc",
+    "guest1 SUCCESS in VLAN 99, address 10.10.99.30; no web access; staff-pc unaffected",
+    "1.4 s (in VLAN 99 1.1 s after bounce)"
+   ],
+   [
+    "Quarantine policy",
+    "-",
+    "ZT_POLICY line 20: 1 permitted, line 30: 2 permitted, line 40: 11 denied",
+    "-"
+   ],
+   [
+    "Release",
+    "release guest-pc",
+    "Back in VLAN 30 with its own address; web access restored",
+    "1.1 s"
+   ],
+   [
+    "Disable account",
+    "disable staff-pc",
+    "alice rejected by FreeRADIUS; Et3 FAILED; staff-pc has no network",
+    "1.4 s"
+   ],
+   [
+    "Enable account",
+    "enable staff-pc",
+    "Back in VLAN 20; web access restored",
+    "2.2 s"
+   ]
+  ],
+  "widths": [
+   1.05,
+   1.25,
+   2.9,
+   1.3
+  ]
+ },
+ {
+  "k": "h3",
+  "t": "5.5.2 End-to-End Test"
+ },
+ {
+  "k": "p",
+  "t": "In the end-to-end test the live pipeline (zt_pipeline.py) ran while all three PCs generated normal traffic, and each attack was launched for 40 seconds, with the network reset between attacks. Nobody triggered any response by hand. Table 5.7 shows, for each attack, the window in which it was flagged, what fired (the model, the rule or both), how it was classified, the action taken and the response time from Equation 3.6, measured from the moment the window closed to the moment the action was applied on the network."
+ },
+ {
+  "k": "table",
+  "caption": "Table 5.7: End-to-end test of the live pipeline (14 October 2026)",
+  "head": [
+   "Attack",
+   "Window flagged",
+   "Fired",
+   "Classified as",
+   "Automatic action",
+   "Response time"
+  ],
+  "rows": [
+   [
+    "DoS from guest-pc",
+    "14:56:26",
+    "model",
+    "dos",
+    "BLOCKED 10.10.30.50",
+    "1.1 s"
+   ],
+   [
+    "Port scan from guest-pc",
+    "14:57:46",
+    "model",
+    "portscan",
+    "QUARANTINED guest-pc",
+    "1.8 s"
+   ],
+   [
+    "Brute force on guest-pc’s port",
+    "14:59:16",
+    "model+rule",
+    "bruteforce",
+    "QUARANTINED guest-pc",
+    "1.8 s"
+   ],
+   [
+    "Insider download on staff-pc",
+    "15:00:46",
+    "model",
+    "insider",
+    "DISABLED account alice",
+    "1.8 s"
+   ],
+   [
+    "Off-hours session on staff-pc",
+    "15:02:06",
+    "model",
+    "offhours",
+    "ALERT ONLY",
+    "1.0 s"
+   ]
+  ],
+  "widths": [
+   1.6,
+   0.9,
+   0.85,
+   0.9,
+   1.6,
+   0.85
+  ]
+ },
+ {
+  "k": "p",
+  "t": "Every attack was detected in the first or second window after it started, classified correctly and answered with the action set out in the Chapter 4 activity diagram. Response times ranged from 1.0 to 1.8 seconds after the window closed. About one second of this is a deliberate wait for late packets; a block then takes about 0.1 seconds, while quarantine and disabling an account take longer because FreeRADIUS has to reload its rules and the port has to be bounced. Counting from the start of an attack, the response came within one ten-second window plus these one to two seconds, so a DoS source was cut off about eight seconds after its flood began."
+ },
+ {
+  "k": "p",
+  "t": "Two other alerts were raised during the test, both of the alert-only kind, so no user was cut off. The first was the window in which the insider download had just begun, which did not yet hold enough data to be classified as insider. The second was a genuine false alarm on guest-pc during normal traffic, which agrees with the false positive rate of about 1% measured in Section 5.4."
+ },
+ {
+  "k": "p",
+  "t": "Earlier runs of the same test found three faults that the offline tests had not. All PCs had addresses ending in .50, so a quarantined PC (then 10.10.99.50) was matched to the wrong PC and admin-pc was quarantined by mistake; each PC now has its own quarantine address. FreeRADIUS compares file times to the second, so two rule changes within one second could leave a rule in force; reloads are now spaced and confirmed in its log. Finally, the reload check failed while the RADIUS log was growing fast during a brute force, and the error stopped the pipeline; a failed response is now logged and detection continues. These faults show the value of testing the whole system end to end and not only its parts."
+ },
+ {
+  "k": "h2",
+  "t": "5.6 Monitoring Results"
+ },
+ {
+  "k": "p",
+  "t": "All nine lab nodes pushed their own data to Zabbix every 30 seconds: packets and bytes per second on their lab interfaces, dropped packets, CPU and memory use. Each push cycle was accepted in full (54 values, 0 failed). The two dashboard pages worked as designed: the network health page showed host availability and the traffic, CPU and memory of every node, and the threat detection page showed the anomaly score of each PC against the threshold line, the security alerts, the last action per PC and the detection-to-action time. A test alert sent through the alert channel appeared as a problem on the right host. Zabbix also raised a real problem of its own: both cEOS switches used over 90% of their memory allowance, which matches the memory pressure discussed next."
+ },
+ {
+  "k": "h2",
+  "t": "5.7 Performance and Resource Use"
+ },
+ {
+  "k": "p",
+  "t": "The whole lab ran on one laptop with 7.1 GiB of usable memory. The two cEOS switches used about 1.5 GB each, and with all nine nodes running, about 1.5 GB remained free, or about 0.5 to 0.75 GB with Zabbix also running. This limit shaped several decisions: the switches were reduced from seven to two, the lab is deployed one node at a time, packets are captured with only their first 128 bytes and read with a light parser instead of Scapy, and Zabbix was stopped during dataset collection."
+ },
+ {
+  "k": "p",
+  "t": "The limit was also reached once. During a rehearsal with Zabbix running, another memory-heavy program (a document renderer) started at the same time, free memory fell to about 75 MB, and the kernel stopped the core switch, the access switch and staff-pc. The detection pipeline itself used about 130 MB. The incident shows that the design is sound but that the hardware leaves little margin: on a single 8 GB laptop the demonstration must run with other heavy programs closed, and a second memory module would remove the risk."
+ },
+ {
+  "k": "h2",
+  "t": "5.8 Validation against the Requirements"
+ },
+ {
+  "k": "p",
+  "t": "Table 5.8 compares the results with the functional requirements of Table 3.2. Every requirement was met."
+ },
+ {
+  "k": "table",
+  "caption": "Table 5.8: Functional requirements and the results that show they are met",
+  "head": [
+   "No.",
+   "Requirement",
+   "Evidence",
+   "Met"
+  ],
+  "rows": [
+   [
+    "FR1",
+    "802.1X login before network access",
+    "Table 5.1: three users authorized; wrong password gives FAILED and no access",
+    "Yes"
+   ],
+   [
+    "FR2",
+    "VLAN assigned from identity",
+    "Table 5.1: bob VLAN 10, alice 20, guest1 30, set by FreeRADIUS",
+    "Yes"
+   ],
+   [
+    "FR3",
+    "Guests cannot reach internal subnets",
+    "Table 5.2: guest to RADIUS and staff blocked; ZT_POLICY counters",
+    "Yes"
+   ],
+   [
+    "FR4",
+    "DMZ cannot start internal connections",
+    "Table 5.2: web to RADIUS blocked; edge DROP counters",
+    "Yes"
+   ],
+   [
+    "FR5",
+    "Traffic summarized per host every 10 s",
+    "Table 5.3 datasets; collector tests; live pipeline windows",
+    "Yes"
+   ],
+   [
+    "FR6",
+    "Windows scored by Isolation Forest and rule",
+    "Table 5.4: detection rate 100%, FPR 1.1%",
+    "Yes"
+   ],
+   [
+    "FR7",
+    "Automatic response by attack type",
+    "Table 5.7: block, quarantine, disable and alert without any manual step",
+    "Yes"
+   ],
+   [
+    "FR8",
+    "Scores, alerts and actions reach the administrator",
+    "Section 5.6: dashboard pages, problems list, 54 values per cycle",
+    "Yes"
+   ]
+  ],
+  "widths": [
+   0.5,
+   1.9,
+   3.3,
+   0.5
+  ]
+ },
+ {
+  "k": "p",
+  "t": "The validation criteria of Section 3.6.6 were also met. Legitimate users kept working: no normal window led to a block, quarantine or disabled account, only to alerts. Every attack type was detected at every tested intensity. DoS sources were blocked, scanning and brute-force hosts ended up in VLAN 99, the account was disabled after insider data theft, off-hours activity raised an alert without changing access, and guests never reached internal resources."
+ },
+ {
+  "k": "h2",
+  "t": "5.9 Discussion"
+ },
+ {
+  "k": "p",
+  "t": "The results support the idea that Zero Trust access control and machine learning detection work best together. Access control alone stopped the guest from reaching internal systems, but it could not see a DoS flood towards an allowed server, a port scan, or an insider copying data with valid credentials. The detection layer saw all of these, and its answers reused the Zero Trust controls themselves: the ACL for a block, and the identity-based VLAN for quarantine. This is close to the identity-based segmentation described by Ahmadi (2025), where a device is moved to another segment when its behavior becomes risky."
+ },
+ {
+  "k": "p",
+  "t": "The most important finding about the model is that an Isolation Forest trained only on normal traffic cannot see features that never vary in that traffic. Failed logins and the off-hours flag were always zero in normal windows, so the trees never split on them and the model missed every brute-force and off-hours window. Benign-only training is the setting compared by Syzranova et al. (2026) for Isolation Forest, the One-Class SVM and autoencoders, and the results here show one of its weak points for Isolation Forest in particular: a feature that never varies in the benign data cannot be used by the trees at all. Trained instead on unlabeled traffic in which attacks are rare, the Isolation Forest isolated the unusual windows by the few splits that its design relies on (Fuhnwi et al., 2023; Lakshmi et al., 2024), detected every DoS, port-scan, insider and off-hours window, and reached a ROC-AUC of 0.990. It still never needed a labeled example, which keeps the main advantage of an unsupervised method."
+ },
+ {
+  "k": "p",
+  "t": "Slow password guessing remained hard for the model, because it changes only one of the eight features. Adding one explicit rule solved this without extra false alarms. Hybrid detection designs have also been proposed in the literature, for example for insider threats (Rauf et al., 2023), and a policy rule fits the Zero Trust principle that every login attempt is checked. The results are reported with and without the rule, so the contribution of the model alone stays visible."
+ },
+ {
+  "k": "p",
+  "t": "The response layer met its aim of acting without a person. With one to two seconds from the end of a window to the action, containment followed detection almost at once, which is the benefit of automated response for fast attacks such as denial of service (Jones, 2025). Studies of incident response note that trust in fully automatic actions is still limited (Falowo & Bou Abdo, 2026). The choice to answer unclassified anomalies and off-hours activity with an alert only addresses this: the false alarms seen in testing never cut off a user, and only attacks matching a clear signature led to an automatic change in access."
+ },
+ {
+  "k": "p",
+  "t": "The results have limits. All traffic was generated by scripts, so normal behavior is more regular than in a real enterprise, and the false positive rate on real traffic would likely be higher. The off-hours flag was simulated rather than observed at night. The lab has one access switch and three users, and it runs on a software data plane with little spare memory. The model was tested on attack types and intensities that were also present, unlabeled, in its training traffic; new kinds of attacks were not tested. These limits are taken up in the recommendations in Chapter 6."
+ },
+ {
+  "k": "h2",
+  "t": "5.10 Summary"
+ },
+ {
+  "k": "p",
+  "t": "The Zero Trust network met all its functional requirements: users were authenticated and placed in VLANs by identity, guests were confined, and the DMZ was isolated. The hybrid detector found all 100 attack windows across five attack types and five intensities, with a false positive rate of 1.1% and an F1-score of 0.952, and named the attack type correctly every time. In the end-to-end test every attack was answered automatically, 1.0 to 1.8 seconds after its window closed, and every alert and action reached Zabbix."
+ }
+]

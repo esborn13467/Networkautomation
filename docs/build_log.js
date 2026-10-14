@@ -107,7 +107,8 @@ c.push(
     ["Automated response engine", "All four actions built and tested live: block IP, quarantine, disable account, alert only"],
     ["Live pipeline (orchestrator)", "Done: end-to-end test detects and answers all five attacks automatically in 1.0 to 1.8 s after the window closes"],
     ["Zabbix push monitoring of every node", "Done and verified: 9 nodes push 54 values per cycle, test alert raised a Problem"],
-    ["Report corrections (Ch. 1 to 4)", "Not started (list in section 12)"],
+    ["Report corrections (Ch. 1 to 4)", "Done by a second Claude session in docs/report/ (Chapters 1 to 4 match the built system; Chapter 6 in progress there)"],
+    ["Chapter 5 (Results and Discussion)", "Written: docs/chapter5/chapter5.json, generated from results/ by build_chapter5.py, merged by the report builder"],
     ["Backup", "Automatic: ~/Desktop/zt-project-backup is refreshed after every git commit"],
   ], [40, 60]),
   GAP(),
@@ -431,6 +432,7 @@ c.push(
     ["A rule stayed in force after reset", "FreeRADIUS compares file times to the second; two reloads within one second", "Reloads spaced over a second apart and confirmed in the log"],
     ["Pipeline stopped during a brute force", "Reload check missed its message in a fast-growing log and the error ended the loop", "Count reload messages over the whole log; failed responses are logged and detection continues"],
     ["Test pipelines kept running after the test", "Background processes in a script ignore Ctrl+C (SIGINT)", "Pipeline stops on SIGTERM too, and refuses to start while another is running"],
+    ["Core, access switch and staff-pc killed during the Zabbix rehearsal (15:09)", "Lab + Zabbix + pipeline + document renders exceeded RAM; free memory fell to 75 MB and the kernel killed containers", "Rebuild with lab-up.sh; no heavy programs during lab runs; report renders only while the lab is idle"],
     ["Little free RAM for captures", "Lab uses about 5.5 GB of 7.1 GB", "Headers-only capture, struct-based reader, Zabbix stopped during collection"],
   ], [28, 34, 38]),
 );
