@@ -1,0 +1,49 @@
+=== normal run 1/4 (600 s)
+16926 packets -> 150 rows (0 attack, 150 normal, 0 transition dropped) -> data/normal_01.csv
+=== normal run 2/4 (600 s)
+14430 packets -> 155 rows (0 attack, 155 normal, 0 transition dropped) -> data/normal_02.csv
+=== normal run 3/4 (600 s)
+15878 packets -> 159 rows (0 attack, 159 normal, 0 transition dropped) -> data/normal_03.csv
+=== normal run 4/4 (600 s)
+13038 packets -> 130 rows (0 attack, 130 normal, 0 transition dropped) -> data/normal_04.csv
+=== dos run 1/5 (rate 40)
+17987 packets -> 17 rows (4 attack, 13 normal, 1 transition dropped) -> data/dos_01.csv
+=== dos run 2/5 (rate 60)
+26040 packets -> 17 rows (4 attack, 13 normal, 1 transition dropped) -> data/dos_02.csv
+=== dos run 3/5 (rate 80)
+34636 packets -> 17 rows (4 attack, 13 normal, 1 transition dropped) -> data/dos_03.csv
+=== dos run 4/5 (rate 100)
+40705 packets -> 15 rows (4 attack, 11 normal, 1 transition dropped) -> data/dos_04.csv
+=== dos run 5/5 (rate 120)
+51726 packets -> 17 rows (4 attack, 13 normal, 1 transition dropped) -> data/dos_05.csv
+=== portscan run 1/5 (rate 10)
+2216 packets -> 17 rows (4 attack, 13 normal, 1 transition dropped) -> data/portscan_01.csv
+=== portscan run 2/5 (rate 20)
+1759 packets -> 16 rows (4 attack, 12 normal, 1 transition dropped) -> data/portscan_02.csv
+=== portscan run 3/5 (rate 30)
+1448 packets -> 13 rows (4 attack, 9 normal, 1 transition dropped) -> data/portscan_03.csv
+=== portscan run 4/5 (rate 40)
+2584 packets -> 13 rows (4 attack, 9 normal, 1 transition dropped) -> data/portscan_04.csv
+=== portscan run 5/5 (rate 50)
+3796 packets -> 13 rows (4 attack, 9 normal, 1 transition dropped) -> data/portscan_05.csv
+=== insider run 1/5 (rate 500000)
+16829 packets -> 13 rows (4 attack, 9 normal, 1 transition dropped) -> data/insider_01.csv
+=== insider run 2/5 (rate 1000000)
+31113 packets -> 14 rows (4 attack, 10 normal, 1 transition dropped) -> data/insider_02.csv
+=== insider run 3/5 (rate 1500000)
+50556 packets -> 17 rows (4 attack, 13 normal, 1 transition dropped) -> data/insider_03.csv
+=== insider run 4/5 (rate 2000000)
+65445 packets -> 16 rows (4 attack, 12 normal, 1 transition dropped) -> data/insider_04.csv
+=== insider run 5/5 (rate 2500000)
+82927 packets -> 15 rows (4 attack, 11 normal, 1 transition dropped) -> data/insider_05.csv
+=== offhours run 1/5 (rate 0)
+1052 packets -> 11 rows (4 attack, 7 normal, 1 transition dropped) -> data/offhours_01.csv
+=== offhours run 2/5 (rate 0)
+1274 packets -> 15 rows (4 attack, 11 normal, 0 transition dropped) -> data/offhours_02.csv
+=== offhours run 3/5 (rate 0)
+828 packets -> 15 rows (4 attack, 11 normal, 1 transition dropped) -> data/offhours_03.csv
+=== offhours run 4/5 (rate 0)
+1382 packets -> 13 rows (4 attack, 9 normal, 1 transition dropped) -> data/offhours_04.csv
+=== offhours run 5/5 (rate 0)
+750 packets -> 15 rows (4 attack, 11 normal, 1 transition dropped) -> data/offhours_05.csv
+=== DONE Wed Oct 14 01:23:52 PM EAT 2026
