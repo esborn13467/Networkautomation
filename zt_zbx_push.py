@@ -40,11 +40,19 @@ ITEMS = [
     ("zt.cpu.pct",     "Container CPU usage",                FLOAT, "%", None),
     ("zt.mem.bytes",   "Container memory in use",            UNSIGNED, "B", None),
     ("zt.alert",       "Security alert (detection pipeline)", TEXT, "", None),
+    ("zt.anomaly.score", "Anomaly score (Isolation Forest)",  FLOAT, "", None),
+    ("zt.action",      "Last response action",               TEXT, "", None),
+    ("zt.response.ms", "Detection-to-action time",           FLOAT, "ms", None),
 ]
+# Anomaly score convention: score = -IsolationForest.decision_function(x), so above the
+# threshold (0 by default, tuned later) means anomalous. The macro lets the threshold
+# be changed in Zabbix without touching the template.
+SCORE_MACRO = "{$ZT.SCORE.THRESHOLD}"
 TRIGGERS = [
     ("High packet rate on {HOST.NAME}", "last(/ZT Push/zt.net.in.pps)>1000 or last(/ZT Push/zt.net.out.pps)>1000", 3),
     ("Container CPU above 80% on {HOST.NAME}", "min(/ZT Push/zt.cpu.pct,2m)>80", 2),
     ("Security alert on {HOST.NAME}: {ITEM.LASTVALUE}", "nodata(/ZT Push/zt.alert,30m)=0", 4),
+    ("Anomaly score above threshold on {HOST.NAME}", "last(/ZT Push/zt.anomaly.score)>" + SCORE_MACRO, 3),
 ]
 
 
@@ -131,13 +139,24 @@ def send_alert(node, text):
     return send([(f"zt-{node}", "zt.alert", text)])
 
 
+def send_score(node, score):
+    """Called by the pipeline every window: one anomaly score per host."""
+    return send([(f"zt-{node}", "zt.anomaly.score", round(float(score), 4))])
+
+
+def send_action(node, action, response_ms):
+    """Called by the response engine after an action is applied."""
+    return send([(f"zt-{node}", "zt.action", action), (f"zt-{node}", "zt.response.ms", round(response_ms, 1))])
+
+
 # ---------- Zabbix configuration ----------
 def setup():
     gid = zs.api("templategroup.get", {"filter": {"name": ["Templates"]}})[0]["groupid"]
     old = zs.api("template.get", {"filter": {"host": [TEMPLATE]}, "output": ["templateid"]})
     if old:
         zs.api("template.delete", [old[0]["templateid"]])
-    tid = zs.api("template.create", {"host": TEMPLATE, "groups": [{"groupid": gid}]})["templateids"][0]
+    tid = zs.api("template.create", {"host": TEMPLATE, "groups": [{"groupid": gid}],
+                                     "macros": [{"macro": SCORE_MACRO, "value": "0"}]})["templateids"][0]
     for key, name, vtype, units, pre in ITEMS:
         item = {"hostid": tid, "key_": key, "name": name, "type": TRAPPER, "value_type": vtype, "units": units}
         if pre:
@@ -171,7 +190,7 @@ def dashboard():
             {"type": 0, "name": "ds.0.aggregate_function", "value": 0},
             {"type": 0, "name": "legend_lines", "value": 5},
         ]}
-    widgets = [
+    health = [
         {"type": "problems", "name": "Security alerts and problems", "x": 0, "y": 0, "width": 36, "height": 5,
          "fields": [{"type": 0, "name": "show_lines", "value": 15}]},
         {"type": "hostavail", "name": "Host availability", "x": 36, "y": 0, "width": 36, "height": 5, "fields": []},
@@ -180,8 +199,39 @@ def dashboard():
         graph(0, 10, "Container CPU %", "Container CPU usage"),
         graph(36, 10, "Container memory", "Container memory in use"),
     ]
-    zs.api("dashboard.create", {"name": name, "display_period": 30, "auto_start": 1,
-                                "pages": [{"widgets": widgets}]})
+    pcs = [f"zt-{n}" for n in ("admin-pc", "staff-pc", "guest-pc")]
+    hosts = zs.api("host.get", {"filter": {"host": [f"zt-{n}" for n in NODES]}, "output": ["hostid"]})
+    ids = {}
+    for key in ("zt.action", "zt.response.ms"):
+        its = zs.api("item.get", {"hostids": [h["hostid"] for h in hosts], "filter": {"key_": key}, "output": ["itemid"]})
+        ids[key] = [i["itemid"] for i in its]
+
+    names = {i["itemid"]: i["hosts"][0]["host"] for key in ids
+             for i in zs.api("item.get", {"itemids": ids[key], "output": ["itemid"], "selectHosts": ["host"]})}
+
+    def itemlist(x, y, w, title, key):
+        # "Item history" widget (Zabbix 7.0): one column per host, newest values first
+        f = []
+        for n, i in enumerate(sorted((i for i in ids[key] if names[i] in pcs), key=lambda i: names[i])):
+            f += [{"type": 1, "name": f"columns.{n}.name", "value": names[i]},
+                  {"type": 4, "name": f"columns.{n}.itemid", "value": i}]
+        return {"type": "itemhistory", "name": title, "x": x, "y": y, "width": w, "height": 5,
+                "fields": f + [{"type": 0, "name": "show_lines", "value": 10}]}
+    score = {"type": "svggraph", "name": "Anomaly score per PC (red line = threshold)", "x": 0, "y": 0, "width": 72, "height": 6,
+             "fields": [{"type": 1, "name": f"ds.0.hosts.{n}", "value": h} for n, h in enumerate(pcs)] + [
+                 {"type": 1, "name": "ds.0.items.0", "value": "Anomaly score (Isolation Forest)"},
+                 {"type": 0, "name": "simple_triggers", "value": 1},
+                 {"type": 0, "name": "legend_lines", "value": 3}]}
+    detection = [
+        score,
+        {"type": "problems", "name": "Security alerts", "x": 0, "y": 6, "width": 36, "height": 5,
+         "fields": [{"type": 1, "name": "problem", "value": "Security alert"}, {"type": 0, "name": "show_lines", "value": 10}]},
+        itemlist(36, 6, 36, "Last response action per host", "zt.action"),
+        itemlist(0, 11, 72, "Detection-to-action time (ms)", "zt.response.ms"),
+    ]
+    zs.api("dashboard.create", {"name": name, "display_period": 30, "auto_start": 0,
+                                "pages": [{"name": "Network health", "widgets": health},
+                                          {"name": "Threat detection and response", "widgets": detection}]})
     print(f"dashboard '{name}' created: Dashboards > All dashboards > {name}")
 
 
