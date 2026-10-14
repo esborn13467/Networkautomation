@@ -11,6 +11,13 @@ scikit-learn IsolationForest behind fit() and score().
 Training is unsupervised: the model is given windows WITHOUT labels. Labels are
 read only to evaluate the result afterwards.
 
+Hybrid detection (chosen design): the Isolation Forest is the main detector, plus one
+Zero Trust policy rule for the case the model cannot see well on its own:
+  BRUTE_FORCE_RULE  >= 5 failed logins from one port in a 10 s window
+A slow password attack changes only failed_logins while the other seven features
+stay normal, so its anomaly score stays near that of a busy normal window. detect()
+returns the model flag, the rule flag and which one fired.
+
 Two training modes are compared in `evaluate`:
   normal-only  trained on normal traffic only (novelty detection)
   mixed        trained on unlabelled traffic in which attacks are rare (~9 %),
@@ -51,6 +58,7 @@ ATTACKS = ["dos", "portscan", "bruteforce", "insider", "offhours"]
 TRAIN_NORMAL, TUNE_NORMAL, TEST_NORMAL = ["normal_01", "normal_02"], ["normal_03"], ["normal_04"]
 QUANTILE = 0.99
 SEED = 42
+BRUTE_FORCE_RULE = 5        # failed logins per window that count as a password attack
 
 
 class AnomalyDetector:
@@ -86,6 +94,19 @@ class AnomalyDetector:
     @staticmethod
     def load(path=MODEL_PATH):
         return joblib.load(path)
+
+
+def detect(det, rows):
+    """Hybrid decision for each window: model OR policy rule. Returns a DataFrame with
+    score, model_flag, rule_flag, flag and reason ('model', 'rule', 'model+rule' or '')."""
+    out = pd.DataFrame(index=rows.index)
+    out["score"] = det.score(rows)
+    out["model_flag"] = out["score"] > det.threshold
+    out["rule_flag"] = rows["failed_logins"] >= BRUTE_FORCE_RULE
+    out["flag"] = out["model_flag"] | out["rule_flag"]
+    out["reason"] = np.select([out.model_flag & out.rule_flag, out.model_flag, out.rule_flag],
+                              ["model+rule", "model", "rule"], "")
+    return out
 
 
 # ---------- data ----------
@@ -174,23 +195,26 @@ def charts(results, summaries):
     plt.rcParams.update({"font.family": "DejaVu Sans", "figure.facecolor": SURFACE})
 
     # 1. detection rate per attack type, both modes
-    fig, ax = plt.subplots(figsize=(7.5, 3.6))
+    fig, ax = plt.subplots(figsize=(8, 3.8))
     _style(ax)
     types = ATTACKS
     xs = np.arange(len(types))
-    for i, (mode, colour) in enumerate([("normal-only", INK2), ("mixed", BLUE)]):
+    names = {"normal-only": "IF, trained on normal only", "mixed": "IF, trained on mixed traffic",
+             "hybrid": "Hybrid: IF (mixed) + brute-force rule"}
+    for i, (mode, colour) in enumerate([("normal-only", INK2), ("mixed", BLUE), ("hybrid", AQUA)]):
         vals = [summaries[mode]["detection_rate_by_type"].get(t, 0) * 100 for t in types]
-        bars = ax.bar(xs + (i - 0.5) * 0.36, vals, 0.34, color=colour, label=f"Trained on {mode} traffic",
+        bars = ax.bar(xs + (i - 1) * 0.27, vals, 0.25, color=colour, label=names[mode],
                       edgecolor=SURFACE, linewidth=2)
         for b, v in zip(bars, vals):
-            ax.text(b.get_x() + b.get_width() / 2, v + 2, f"{v:.0f}%", ha="center", fontsize=8, color=INK)
+            ax.text(b.get_x() + b.get_width() / 2, v + 2, f"{v:.0f}%", ha="center", fontsize=7, color=INK)
     fpr = {m: summaries[m]["overall"]["false_positive_rate"] * 100 for m in summaries}
     ax.set_xticks(xs, [LABEL[t] for t in types])
     ax.set_ylim(0, 112)
     ax.set_ylabel("Attack windows detected (%)", color=INK2, fontsize=9)
     ax.set_title("Detection rate by attack type (5-fold, held-out runs)", color=INK, fontsize=11, loc="left")
-    ax.legend(frameon=False, fontsize=8, loc="upper left", bbox_to_anchor=(0, -0.12), ncol=2)
-    fig.text(0.99, 0.01, f"False-positive rate: normal-only {fpr['normal-only']:.1f}%, mixed {fpr['mixed']:.1f}%",
+    ax.legend(frameon=False, fontsize=8, loc="upper left", bbox_to_anchor=(0, -0.12), ncol=3)
+    fig.text(0.99, 0.01, f"False-positive rate: normal-only {fpr['normal-only']:.1f}%, mixed {fpr['mixed']:.1f}%, "
+             f"hybrid {fpr['hybrid']:.1f}%",
              ha="right", fontsize=8, color=INK2)
     fig.tight_layout()
     fig.savefig(os.path.join(RESULTS, "detection_by_type.png"), dpi=200)
@@ -217,7 +241,7 @@ def charts(results, summaries):
     plt.close(fig)
 
     # 3. confusion matrix, mixed mode
-    o = summaries["mixed"]["overall"]
+    o = summaries["hybrid"]["overall"]
     cm = np.array([[o["tn"], o["fp"]], [o["fn"], o["tp"]]])
     fig, ax = plt.subplots(figsize=(4.2, 3.6))
     ax.imshow(cm, cmap=matplotlib.colors.LinearSegmentedColormap.from_list("b", ["#cde2fb", "#184f95"]))
@@ -228,7 +252,7 @@ def charts(results, summaries):
     ax.set_yticks([0, 1], ["Normal", "Attack"])
     ax.set_xlabel("Predicted", color=INK2, fontsize=9)
     ax.set_ylabel("Actual", color=INK2, fontsize=9)
-    ax.set_title("Confusion matrix (mixed training)", color=INK, fontsize=11, loc="left")
+    ax.set_title("Confusion matrix (hybrid detector)", color=INK, fontsize=11, loc="left")
     ax.tick_params(colors=INK2, labelsize=9)
     for s in ax.spines.values():
         s.set_visible(False)
@@ -240,6 +264,10 @@ def charts(results, summaries):
 def evaluate():
     os.makedirs(RESULTS, exist_ok=True)
     results = {m: run_mode(m) for m in ("normal-only", "mixed")}
+    hyb = results["mixed"].copy()
+    hyb["model_flag"] = hyb["flag"]
+    hyb["flag"] = hyb["flag"] | (hyb["failed_logins"] >= BRUTE_FORCE_RULE)
+    results["hybrid"] = hyb
     summaries = {m: summarise(r) for m, r in results.items()}
     for m, r in results.items():
         r.to_csv(os.path.join(RESULTS, f"scores_{m}.csv"), index=False)
@@ -248,7 +276,7 @@ def evaluate():
     charts(results, summaries)
     for m, s in summaries.items():
         o = s["overall"]
-        print(f"\n== trained on {m} traffic (5 folds, {o['tp'] + o['fn']} attack and {o['tn'] + o['fp']} normal test windows)")
+        print(f"\n== {m} (5 folds, {o['tp'] + o['fn']} attack and {o['tn'] + o['fp']} normal test windows)")
         print(f"   accuracy {o['accuracy']:.3f}  precision {o['precision']:.3f}  recall {o['recall']:.3f}  "
               f"F1 {o['f1']:.3f}  FPR {o['false_positive_rate']:.3f}  ROC-AUC {o['roc_auc']:.3f}")
         print("   detection by type:", {LABEL[t]: f"{v:.0%}" for t, v in s["detection_rate_by_type"].items()})
@@ -282,6 +310,6 @@ if __name__ == "__main__":
     else:
         det = AnomalyDetector.load()
         rows = pd.read_csv(a.csv)
-        rows["score"] = det.score(rows).round(4)
-        rows["flag"] = rows["score"] > det.threshold
-        print(rows[["window_start", "host_ip", "score", "flag", "label", "attack_type"]].to_string(index=False))
+        rows = rows.join(detect(det, rows))
+        rows["score"] = rows["score"].round(4)
+        print(rows[["window_start", "host_ip", "score", "flag", "reason", "label", "attack_type"]].to_string(index=False))

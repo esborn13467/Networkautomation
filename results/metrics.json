@@ -98,5 +98,55 @@
       "portscan_05": 1.0
     },
     "mean_threshold": -0.017163962048260914
+  },
+  "hybrid": {
+    "overall": {
+      "accuracy": 0.9901671583087512,
+      "precision": 0.9090909090909091,
+      "recall": 1.0,
+      "f1": 0.9523809523809523,
+      "false_positive_rate": 0.010905125408942203,
+      "roc_auc": 0.9902617230098146,
+      "tp": 100,
+      "fp": 10,
+      "tn": 907,
+      "fn": 0
+    },
+    "detection_rate_by_type": {
+      "bruteforce": 1.0,
+      "dos": 1.0,
+      "insider": 1.0,
+      "normal": 0.010905125408942203,
+      "offhours": 1.0,
+      "portscan": 1.0
+    },
+    "detection_rate_by_run": {
+      "bruteforce_01": 1.0,
+      "bruteforce_02": 1.0,
+      "bruteforce_03": 1.0,
+      "bruteforce_04": 1.0,
+      "bruteforce_05": 1.0,
+      "dos_01": 1.0,
+      "dos_02": 1.0,
+      "dos_03": 1.0,
+      "dos_04": 1.0,
+      "dos_05": 1.0,
+      "insider_01": 1.0,
+      "insider_02": 1.0,
+      "insider_03": 1.0,
+      "insider_04": 1.0,
+      "insider_05": 1.0,
+      "offhours_01": 1.0,
+      "offhours_02": 1.0,
+      "offhours_03": 1.0,
+      "offhours_04": 1.0,
+      "offhours_05": 1.0,
+      "portscan_01": 1.0,
+      "portscan_02": 1.0,
+      "portscan_03": 1.0,
+      "portscan_04": 1.0,
+      "portscan_05": 1.0
+    },
+    "mean_threshold": -0.017163962048260914
   }
 }
