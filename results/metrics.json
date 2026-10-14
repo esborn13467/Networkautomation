@@ -1,0 +1,102 @@
+{
+  "normal-only": {
+    "overall": {
+      "accuracy": 0.9429695181907571,
+      "precision": 0.9038461538461539,
+      "recall": 0.47,
+      "f1": 0.6184210526315789,
+      "false_positive_rate": 0.0054525627044711015,
+      "roc_auc": 0.8065430752453653,
+      "tp": 47,
+      "fp": 5,
+      "tn": 912,
+      "fn": 53
+    },
+    "detection_rate_by_type": {
+      "bruteforce": 0.0,
+      "dos": 0.95,
+      "insider": 1.0,
+      "normal": 0.0054525627044711015,
+      "offhours": 0.0,
+      "portscan": 0.4
+    },
+    "detection_rate_by_run": {
+      "bruteforce_01": 0.0,
+      "bruteforce_02": 0.0,
+      "bruteforce_03": 0.0,
+      "bruteforce_04": 0.0,
+      "bruteforce_05": 0.0,
+      "dos_01": 0.75,
+      "dos_02": 1.0,
+      "dos_03": 1.0,
+      "dos_04": 1.0,
+      "dos_05": 1.0,
+      "insider_01": 1.0,
+      "insider_02": 1.0,
+      "insider_03": 1.0,
+      "insider_04": 1.0,
+      "insider_05": 1.0,
+      "offhours_01": 0.0,
+      "offhours_02": 0.0,
+      "offhours_03": 0.0,
+      "offhours_04": 0.0,
+      "offhours_05": 0.0,
+      "portscan_01": 0.25,
+      "portscan_02": 0.5,
+      "portscan_03": 0.0,
+      "portscan_04": 0.5,
+      "portscan_05": 0.75
+    },
+    "mean_threshold": 0.168367339919113
+  },
+  "mixed": {
+    "overall": {
+      "accuracy": 0.9803343166175025,
+      "precision": 0.9,
+      "recall": 0.9,
+      "f1": 0.9,
+      "false_positive_rate": 0.010905125408942203,
+      "roc_auc": 0.9902617230098146,
+      "tp": 90,
+      "fp": 10,
+      "tn": 907,
+      "fn": 10
+    },
+    "detection_rate_by_type": {
+      "bruteforce": 0.5,
+      "dos": 1.0,
+      "insider": 1.0,
+      "normal": 0.010905125408942203,
+      "offhours": 1.0,
+      "portscan": 1.0
+    },
+    "detection_rate_by_run": {
+      "bruteforce_01": 0.0,
+      "bruteforce_02": 0.0,
+      "bruteforce_03": 0.5,
+      "bruteforce_04": 1.0,
+      "bruteforce_05": 1.0,
+      "dos_01": 1.0,
+      "dos_02": 1.0,
+      "dos_03": 1.0,
+      "dos_04": 1.0,
+      "dos_05": 1.0,
+      "insider_01": 1.0,
+      "insider_02": 1.0,
+      "insider_03": 1.0,
+      "insider_04": 1.0,
+      "insider_05": 1.0,
+      "offhours_01": 1.0,
+      "offhours_02": 1.0,
+      "offhours_03": 1.0,
+      "offhours_04": 1.0,
+      "offhours_05": 1.0,
+      "portscan_01": 1.0,
+      "portscan_02": 1.0,
+      "portscan_03": 1.0,
+      "portscan_04": 1.0,
+      "portscan_05": 1.0
+    },
+    "mean_threshold": -0.017163962048260914
+  }
+}
