@@ -1,7 +1,7 @@
 const fs = require("fs");
 const {
   Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, Table, TableRow, TableCell,
-  WidthType, ShadingType, BorderStyle, LevelFormat, PageBreak, TableOfContents, Footer, PageNumber,
+  WidthType, ShadingType, BorderStyle, LevelFormat, PageBreak, TableOfContents, Footer, PageNumber, ImageRun,
 } = require("docx");
 
 const path = require("path");
@@ -60,6 +60,14 @@ function T(header, rows, widths) {
     ],
   });
 }
+const IMG = (file, w, h, caption) => {
+  const f = path.join(__dirname, "..", "results", file);
+  if (!fs.existsSync(f)) return [];
+  return [
+    new Paragraph({ alignment: AlignmentType.CENTER, children: [new ImageRun({ type: "png", data: fs.readFileSync(f), transformation: { width: w, height: h } })] }),
+    new Paragraph({ alignment: AlignmentType.CENTER, spacing: { after: 200 }, children: [new TextRun({ text: caption, italics: true, size: 18, color: "52514E" })] }),
+  ];
+};
 const GAP = () => new Paragraph({ children: [], spacing: { after: 120 } });
 
 // ---------- content ----------
@@ -94,11 +102,11 @@ c.push(
     ["Log collector (zt_collector.py)", "Done; on 14 Oct upgraded with a fast pcap reader; 10/10 offline tests pass"],
     ["Traffic generator (zt_traffic.py)", "Rebuilt on 14 Oct; 6/6 offline tests pass; live DoS smoke test passed"],
     ["Baseline and attack datasets", "Done: 594 normal rows from 4 runs, 20 attack windows each for DoS, port scan, insider, off-hours and brute force"],
-    ["Isolation Forest model", "Not started"],
+    ["Isolation Forest model", "Built and evaluated (5-fold): accuracy 98.0%, F1 0.90, false positives 1.1%; weak brute force partly missed"],
     ["Brute-force attack generator", "Done: 10 to 80 failed logins per window; 5 runs collected"],
-    ["Automated response engine", "Not started (design in section 9)"],
+    ["Automated response engine", "Not started (design in section 10)"],
     ["Zabbix push monitoring of every node", "Done and verified: 9 nodes push 54 values per cycle, test alert raised a Problem"],
-    ["Report corrections (Ch. 1 to 4)", "Not started (list in section 11)"],
+    ["Report corrections (Ch. 1 to 4)", "Not started (list in section 12)"],
     ["Backup", "Automatic: ~/Desktop/zt-project-backup is refreshed after every git commit"],
   ], [40, 60]),
   GAP(),
@@ -295,9 +303,36 @@ c.push(
   ], [30, 15, 30, 25]),
 );
 
+// 5b. Model
+c.push(
+  H1("6. The Isolation Forest Model (step 3E)"),
+  H2("6.1 How it works"),
+  P("Isolation Forest builds many random trees. Each tree keeps splitting the data on a random feature at a random value until every window sits alone. Normal windows are alike, so it takes many splits to isolate one; an attack is unusual and is isolated in a few splits. The average number of splits becomes the anomaly score: the fewer the splits, the higher the score. In the code, AnomalyDetector (as in the Chapter 4 class diagram) wraps a StandardScaler and scikit-learn's IsolationForest (200 trees) behind fit() and score(); score = minus decision_function, so higher means more anomalous. A window is flagged when its score is above a threshold."),
+  H2("6.2 Method"),
+  B("**Unsupervised**: the model is never given labels. Labels are used only afterwards, to measure the result."),
+  B("**Threshold** tuned on a separate normal run (normal_03): the 99th percentile of its scores, which targets about 1 % false alarms."),
+  B("**5-fold leave-one-run-out**: in fold k, run k of every attack type is held out for testing and the model trains on two other runs of each type. Every run, including the weakest attacks, is tested by a model that never saw it. normal_04 is the held-out normal run, scored in every fold."),
+  B("**Two training modes compared**: normal-only (novelty detection) and mixed (unlabelled traffic in which attacks are rare, about 9 % of windows), which is how Isolation Forest is normally used."),
+  H2("6.3 Results"),
+  T(["Training mode", "Accuracy", "Precision", "Recall", "F1", "False-positive rate", "ROC-AUC"], [
+    ["Normal-only", "94.3%", "0.904", "0.470", "0.618", "0.5%", "0.807"],
+    ["Mixed (chosen)", "98.0%", "0.900", "0.900", "0.900", "1.1%", "0.990"],
+  ], [22, 13, 13, 12, 10, 17, 13]),
+  GAP(),
+  P("Totals over the 5 folds: 100 attack windows and 917 normal test windows (normal_04 plus the bystander and before/after windows of each held-out attack run)."),
+  ...IMG("detection_by_type.png", 600, 288, "Figure: detection rate per attack type, both training modes"),
+  ...IMG("score_distribution.png", 600, 288, "Figure: anomaly score of every test window with the tuned threshold (mixed training)"),
+  ...IMG("confusion_matrix.png", 300, 257, "Figure: confusion matrix, mixed training, 5 folds"),
+  H2("6.4 Findings"),
+  B("**Normal-only training is blind to features that never vary in normal traffic.** failed_logins and off_hours are always 0 in normal windows and destination ports are almost always 1, so the trees never split on them: brute force and off-hours were detected 0 % of the time and port scans 40 %. This is a property of Isolation Forest, not a bug."),
+  B("**Mixed training fixes this**: DoS, port scan, insider and off-hours are all detected 100 % on held-out runs with 1.1 % false alarms."),
+  B("**Slow brute force is the hard case.** At 1 to 2 attempts per second (about 10 to 20 failed logins per window) every other feature looks normal, and the score only reaches the level of a busy normal window; catching these by lowering the threshold would raise false alarms to about 5 to 10 %. At 3 attempts per second half the windows are caught, and from 5 per second all of them."),
+  B("The final model (models/zt_iforest.joblib) is trained the same way as evaluated, on runs 2 and 4 of each attack (unlabelled) plus normal_01 and normal_02; on the unseen runs it detects DoS, port scan, insider and off-hours 100 % and brute force 58 %, with 1.5 % false alarms on normal_04."),
+);
+
 // 6. Evidence
 c.push(
-  H1("6. Verified Evidence for Chapter 5"),
+  H1("7. Verified Evidence for Chapter 5"),
   P("Take a screenshot of each item for the report."),
   T(["Evidence", "Where to get it"], [
     ["show dot1x hosts: bob VLAN 10, alice 20, guest1 30, all SUCCESS", "acc1"],
@@ -318,7 +353,7 @@ c.push(
 
 // 7. Problems
 c.push(
-  H1("7. Problems Encountered and Fixes"),
+  H1("8. Problems Encountered and Fixes"),
   T(["Problem", "Cause", "Fix"], [
     ["Docker / containerlab install broke", "get.docker.com does not support Kali; leftover repo entry", "Removed docker.list; used Kali's docker.io and the containerlab installer"],
     ["Laptop froze on deploy", "Three cEOS nodes booting at once on 7.1 GiB", "--max-workers 1, two switches, close browser, earlyoom, memory gate in lab-up.sh"],
@@ -342,16 +377,16 @@ c.push(
 
 // 8. Monitoring
 c.push(
-  H1("8. Monitoring with Zabbix"),
-  H2("8.1 Viewing the dashboard"),
+  H1("9. Monitoring with Zabbix"),
+  H2("9.1 Viewing the dashboard"),
   N("Make sure Zabbix is running: `docker start zbx-db zbx-server zbx-web` (lab-up.sh starts it automatically).", "zbx"),
   N("Open http://localhost:8080 in a browser on the laptop.", "zbx"),
   N("Log in with the default Zabbix account (user Admin, password zabbix) and change the password afterwards under User settings.", "zbx"),
   N("Useful pages: Dashboards (overview), Monitoring > Hosts (all lab nodes and their status), Monitoring > Latest data (live values), Monitoring > Problems (alerts).", "zbx"),
-  H2("8.2 What is monitored today"),
+  H2("9.2 What is monitored today"),
   B("Both switches through SNMP v2c (interface traffic, CPU, memory, uptime)."),
   B("All seven Linux nodes through ICMP ping (up or down only)."),
-  H2("8.3 Every node pushes its own data (zt_zbx_push.py)"),
+  H2("9.3 Every node pushes its own data (zt_zbx_push.py)"),
   P("SNMP and ping are pull-based and tell little about the Linux nodes. zt_zbx_push.py reads each container's own counters and sends them to Zabbix with the Zabbix sender protocol (TCP 10051) every 30 seconds. Zabbix converts the counters into per-second rates."),
   T(["Item", "Meaning"], [
     ["Data ports: packets in / out per second", "Traffic on the node's lab interfaces (management eth0 excluded)"],
@@ -363,7 +398,7 @@ c.push(
   ], [45, 55]),
   GAP(),
   P("Triggers: high packet rate (over 1000 packets/s), container CPU above 80 % for 2 minutes, and security alert (stays open until an administrator closes it). A dashboard \"ZT Lab overview\" shows problems, host availability and graphs of traffic, CPU and memory for every node. lab-up.sh starts the push loop and lab-down.sh stops it."),
-  H2("8.4 The two dashboard pages"),
+  H2("9.4 The two dashboard pages"),
   T(["Page", "Shows", "Used in the demo for"], [
     ["Network health", "Problems list, host availability, packets and bytes per second, CPU and memory for all nodes", "Proving the whole topology is monitored; traffic spikes during attacks"],
     ["Threat detection and response", "Anomaly score per PC with the threshold line, security alerts, last response action per PC, detection-to-action time", "Showing each attack being detected and answered automatically"],
@@ -375,10 +410,8 @@ c.push(
 
 // 9. Remaining
 c.push(
-  H1("9. Remaining Work"),
+  H1("10. Remaining Work"),
   H2("Phase 3 (detection and response)"),
-  N("**Datasets** - collection in progress (section 5).", "rem"),
-  N("**Isolation Forest model** - StandardScaler plus IsolationForest trained on normal windows only, saved with joblib. Tune contamination and the score threshold on a validation run; report accuracy, precision, recall, F1, false positive rate and a score histogram on separate test runs.", "rem"),
   N("**Response engine** following the Chapter 4 activity diagram: DoS gives block source IP (deny line in ZT_POLICY above the permit, optionally iptables on edge); brute-force or port scan gives quarantine; off-hours or unclassified gives alert only; plus the abstract's disable-account action (reject the user in FreeRADIUS and bounce the port).", "rem"),
   N("**Quarantine on cEOS** - the riskiest piece: 802.1X assigns VLANs dynamically, so a plain access-VLAN change will not stick. Test the authentication-failure VLAN feature first; otherwise disable the account and bounce the port.", "rem"),
   N("**Alerts** - JSON alert and incident log, pushed to Zabbix.", "rem"),
@@ -386,12 +419,12 @@ c.push(
   H2("Phase 4 (validation and report)"),
   B("Run each attack end to end several times; capture ACL counters, logs, Zabbix alerts and timing."),
   B("Compute detection accuracy, false positive rate and response time per attack."),
-  B("Write Chapter 5 with the evidence in section 6 and the limitations: simulated traffic only, cEOS-lab software data plane, SVI ACLs unsupported, simulated off-hours flag, 8 GB RAM, single access switch."),
+  B("Write Chapter 5 with the evidence in section 7, the model results in section 6 and the limitations: simulated traffic only, cEOS-lab software data plane, SVI ACLs unsupported, simulated off-hours flag, 8 GB RAM, single access switch."),
 );
 
 // 10. Files
 c.push(
-  H1("10. Files and Commands"),
+  H1("11. Files and Commands"),
   P("Project folder: **~/Networkautomation/zt-project** (do not use ~/zt-project). Activate Python with `source venv/bin/activate` and never run the Python scripts with sudo."),
   T(["File", "Purpose"], [
     ["zt-dev.clab.yml", "Whole lab topology"],
@@ -412,6 +445,9 @@ c.push(
     ["docs/build_log.js", "Generates this document (node docs/build_log.js)"],
     ["archive/", "Files from earlier phases kept for history (see archive/README.md)"],
     ["demo.md", "Step-by-step panel demonstration script with exact commands"],
+    ["zt_model.py", "AnomalyDetector (Isolation Forest); evaluate, train and score commands"],
+    ["results/", "metrics.json, per-window scores and the three Chapter 5 charts"],
+    ["models/zt_iforest.joblib", "Trained model (rebuild any time with python zt_model.py train)"],
   ], [45, 55]),
   GAP(),
   H2("Daily routine"),
@@ -429,14 +465,14 @@ c.push(
 
 // 11. Report edits + risks
 c.push(
-  H1("11. Report Corrections Needed"),
+  H1("12. Report Corrections Needed"),
   B("**Abstract**: describe the simulation as containerlab with Arista cEOS; use FreeRADIUS wording instead of Cisco ISE."),
   B("**2.3.2, 2.5 and Figure 2.1**: FreeRADIUS instead of Cisco ISE; remove TACACS+, the IoT VLAN and the wireless AP; one core switch; VLANs 10/20/30/99 and DMZ 10.10.40.0/24; add Zabbix."),
   B("**2.3.7**: feature list must match the eight features in Chapter 4."),
   B("**3.4.2**: tools are containerlab, Arista cEOS-lab, FreeRADIUS, Zabbix and Python, not Packet Tracer or GNS3."),
   B("**4.1, 4.3.x, 4.4.1, Figures 4.7 and 4.8**: replace the Packet Tracer and ISE build with the containerlab topology (containerlab graph can draw Figure 4.8); the edge router is a Linux container; QUARANTINE_ACL and GUEST_ACL are merged into ZT_POLICY on core Ethernet1; collection uses a SPAN mirror."),
   B("**1.4 Limitations**: add the reduced topology and the RAM limit."),
-  H1("12. Risks and Open Questions"),
+  H1("13. Risks and Open Questions"),
   B("**RAM**: only one 8 GiB module is detected. Check the BIOS or reseat it; a second 8 GB DDR4-2666 SODIMM would remove the main stability risk."),
   B("**Quarantine** on a dynamically assigned 802.1X port is untested and is the riskiest remaining piece."),
   B("**Zabbix history** is lost on every lab-down because the database lives inside the container."),
