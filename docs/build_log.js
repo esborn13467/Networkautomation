@@ -337,6 +337,13 @@ c.push(
   ], [45, 55]),
   GAP(),
   P("Triggers: high packet rate (over 1000 packets/s), container CPU above 80 % for 2 minutes, and security alert (stays open until an administrator closes it). A dashboard \"ZT Lab overview\" shows problems, host availability and graphs of traffic, CPU and memory for every node. lab-up.sh starts the push loop and lab-down.sh stops it."),
+  H2("8.4 The two dashboard pages"),
+  T(["Page", "Shows", "Used in the demo for"], [
+    ["Network health", "Problems list, host availability, packets and bytes per second, CPU and memory for all nodes", "Proving the whole topology is monitored; traffic spikes during attacks"],
+    ["Threat detection and response", "Anomaly score per PC with the threshold line, security alerts, last response action per PC, detection-to-action time", "Showing each attack being detected and answered automatically"],
+  ], [20, 45, 35]),
+  GAP(),
+  P("The detection page was checked on 14 October with clearly labelled test values: the score graph drew the threshold line, and the action and timing widgets displayed the test entries. In Zabbix 7.0 the old Plain text widget is no longer available, so the Item history widget is used."),
   P("Verified on 14 October: all 9 nodes pushed 54 values per cycle with 0 failures, and a test alert for guest-pc appeared under Monitoring > Problems. Zabbix also reported that both cEOS switches use over 90 % of their memory allowance, which matches the RAM pressure seen throughout the project."),
 );
 
@@ -379,6 +386,7 @@ c.push(
     ["backup.sh", "Updates ~/Desktop/zt-project-backup; runs automatically after every git commit"],
     ["docs/build_log.js", "Generates this document (node docs/build_log.js)"],
     ["archive/", "Files from earlier phases kept for history (see archive/README.md)"],
+    ["demo.md", "Step-by-step panel demonstration script with exact commands"],
   ], [45, 55]),
   GAP(),
   H2("Daily routine"),
