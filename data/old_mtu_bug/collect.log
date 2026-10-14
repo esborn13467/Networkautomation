@@ -1,0 +1,49 @@
+=== normal run 1/4 (600 s)
+agent installed on admin-pc, staff-pc, guest-pc | doc.bin (200 kB) and big.bin (20 MB) on web
+=== normal run 2/4 (600 s)
+agent installed on admin-pc, staff-pc, guest-pc | doc.bin (200 kB) and big.bin (20 MB) on web
+=== normal run 3/4 (600 s)
+agent installed on admin-pc, staff-pc, guest-pc | doc.bin (200 kB) and big.bin (20 MB) on web
+=== normal run 4/4 (600 s)
+agent installed on admin-pc, staff-pc, guest-pc | doc.bin (200 kB) and big.bin (20 MB) on web
+=== dos run 1/5 (rate 40)
+attack 'dos' from guest-pc for 40s
+=== dos run 2/5 (rate 60)
+attack 'dos' from guest-pc for 40s
+=== dos run 3/5 (rate 80)
+attack 'dos' from guest-pc for 40s
+=== dos run 4/5 (rate 100)
+attack 'dos' from guest-pc for 40s
+=== dos run 5/5 (rate 120)
+attack 'dos' from guest-pc for 40s
+=== portscan run 1/5 (rate 10)
+attack 'portscan' from guest-pc for 40s
+=== portscan run 2/5 (rate 20)
+attack 'portscan' from guest-pc for 40s
+=== portscan run 3/5 (rate 30)
+attack 'portscan' from guest-pc for 40s
+=== portscan run 4/5 (rate 40)
+attack 'portscan' from guest-pc for 40s
+=== portscan run 5/5 (rate 50)
+attack 'portscan' from guest-pc for 40s
+=== insider run 1/5 (rate 500000)
+attack 'insider' from staff-pc for 40s
+=== insider run 2/5 (rate 1000000)
+attack 'insider' from staff-pc for 40s
+=== insider run 3/5 (rate 1500000)
+attack 'insider' from staff-pc for 40s
+=== insider run 4/5 (rate 2000000)
+attack 'insider' from staff-pc for 40s
+=== insider run 5/5 (rate 2500000)
+attack 'insider' from staff-pc for 40s
+=== offhours run 1/5 (rate 0)
+attack 'offhours' from staff-pc for 40s
+=== offhours run 2/5 (rate 0)
+attack 'offhours' from staff-pc for 40s
+=== offhours run 3/5 (rate 0)
+attack 'offhours' from staff-pc for 40s
+=== offhours run 4/5 (rate 0)
+attack 'offhours' from staff-pc for 40s
+=== offhours run 5/5 (rate 0)
+attack 'offhours' from staff-pc for 40s
+=== DONE Wed Oct 14 12:04:59 PM EAT 2026
