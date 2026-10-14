@@ -106,6 +106,7 @@ c.push(
     ["Brute-force attack generator", "Done: 10 to 80 failed logins per window; 5 runs collected"],
     ["Automated response engine", "All four actions built and tested live: block IP, quarantine, disable account, alert only"],
     ["Live pipeline (orchestrator)", "Done: end-to-end test detects and answers all five attacks automatically in 1.0 to 1.8 s after the window closes"],
+    ["Final rehearsal with Zabbix running", "Passed 14 Oct 19:08: 5 of 5 attacks answered (1.1 to 1.9 s), no false alarms, 113 scores and 6 actions in Zabbix, lowest free memory 1,272 MB"],
     ["Zabbix push monitoring of every node", "Done and verified: 9 nodes push 54 values per cycle, test alert raised a Problem"],
     ["Report corrections (Ch. 1 to 4)", "Done by a second Claude session in docs/report/ (Chapters 1 to 4 match the built system; Chapter 6 in progress there)"],
     ["Chapter 5 (Results and Discussion)", "Written: docs/chapter5/chapter5.json, generated from results/ by build_chapter5.py, merged by the report builder"],
@@ -474,7 +475,7 @@ c.push(
 c.push(
   H1("10. Remaining Work"),
   H2("Phase 3 (detection and response)"),
-  N("**Rehearse the full demo with Zabbix running** (the end-to-end test ran with Zabbix stopped to save RAM) and record a backup video.", "rem"),
+  N("**Record a backup video** of one full demo run (demo.md).", "rem"),
   H2("Phase 4 (validation and report)"),
   B("Run each attack end to end several times; capture ACL counters, logs, Zabbix alerts and timing."),
   B("Compute detection accuracy, false positive rate and response time per attack."),

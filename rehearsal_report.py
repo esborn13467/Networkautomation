@@ -48,10 +48,12 @@ s["paragraph"] = (
     f"A final rehearsal of the full demonstration repeated the end-to-end test with Zabbix and the push loop running. "
     f"{s['attacks_answered_correctly']} of the 5 attacks were answered automatically with the expected action, "
     + (f"{min(times):.1f} to {max(times):.1f} seconds after the window closed, " if times else "")
-    + f"and Zabbix received {nscores} anomaly scores, {nactions} response actions and {len(problems)} security-alert "
-    f"problems during the run. "
-    + (f"{len(false_alerts)} alert-only false alarm{'s' if len(false_alerts) != 1 else ''} occurred and no user was "
-       f"blocked, quarantined or disabled by mistake. " if not drastic_mistakes else
+    + f"and Zabbix received {nscores} anomaly scores and {nactions} response actions during the run; the security "
+    f"alerts opened {len(problems)} problem{'s' if len(problems) != 1 else ''} in Zabbix, one for each PC that was "
+    f"acted on, each staying open until an administrator closes it. "
+    + ((("No false alarms occurred" if not false_alerts else
+          f"{len(false_alerts)} alert-only false alarm{'s' if len(false_alerts) != 1 else ''} occurred")
+         + " and no user was blocked, quarantined or disabled by mistake. ") if not drastic_mistakes else
        f"{len(drastic_mistakes)} drastic action(s) were taken by mistake. ")
     + (f"The lowest free memory during the run was {min(mem)} MB." if mem else ""))
 json.dump(s, open(os.path.join(out, "summary.json"), "w"), indent=2)

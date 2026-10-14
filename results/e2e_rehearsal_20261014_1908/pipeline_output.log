@@ -1,0 +1,52 @@
+ZT pipeline running: detect + respond; 3 PCs; threshold -0.019; clock business hours (12:00). Ctrl+C to stop.
+
+19:08:24  admin-pc -0.155 | staff-pc -0.137
+19:08:34  admin-pc -0.185 | staff-pc -0.160 | guest-pc -0.184
+19:08:44  admin-pc -0.155 | staff-pc -0.184 | guest-pc +0.068  << FLAGGED (model)
+   !! guest-pc: dos -> BLOCKED 10.10.30.50 in 1.2 s after the window closed
+19:08:54  staff-pc -0.180 | guest-pc -0.018  << FLAGGED (model)
+19:09:04  staff-pc -0.184 | guest-pc -0.066
+19:09:14  staff-pc -0.180 | guest-pc -0.065
+19:09:24  admin-pc -0.066 | staff-pc -0.183 | guest-pc -0.087
+19:09:34  staff-pc -0.172 | guest-pc -0.088
+19:09:44  staff-pc -0.178 | guest-pc -0.178
+19:09:54  admin-pc -0.155 | staff-pc -0.138 | guest-pc -0.184
+19:10:04  staff-pc -0.111 | guest-pc -0.012  << FLAGGED (model)
+   !! guest-pc: portscan -> QUARANTINED guest-pc in 1.9 s after the window closed
+19:10:14  admin-pc -0.184 | staff-pc -0.137 | guest-pc -0.021 | guest-pc +0.058  << FLAGGED (model)
+19:10:24  admin-pc -0.185 | staff-pc -0.185 | guest-pc +0.107  << FLAGGED (model)
+19:10:34  admin-pc -0.184 | guest-pc +0.109  << FLAGGED (model)
+19:10:44  admin-pc -0.134 | staff-pc -0.185 | guest-pc +0.057  << FLAGGED (model)
+19:10:54  admin-pc -0.121 | staff-pc -0.184 | guest-pc -0.098
+19:11:04  admin-pc -0.136 | guest-pc -0.088
+19:11:14  admin-pc -0.180 | staff-pc -0.169 | guest-pc -0.136
+19:11:24  admin-pc -0.119 | staff-pc -0.184 | guest-pc -0.184
+19:11:34  admin-pc -0.151 | staff-pc -0.185 | guest-pc -0.184 | guest-pc +0.069  << FLAGGED (model+rule)
+   !! guest-pc: bruteforce -> QUARANTINED guest-pc in 1.9 s after the window closed
+19:11:44  admin-pc -0.182 | guest-pc +0.096  << FLAGGED (model+rule)
+19:11:54  admin-pc -0.184 | guest-pc +0.102  << FLAGGED (model+rule)
+19:12:04  admin-pc -0.183 | staff-pc -0.184 | guest-pc +0.113  << FLAGGED (model+rule)
+19:12:14  admin-pc -0.154 | staff-pc -0.070 | guest-pc -0.033  << FLAGGED (rule)
+19:12:24  admin-pc -0.129 | staff-pc -0.184 | guest-pc -0.088
+19:12:34  admin-pc -0.184 | staff-pc -0.184 | guest-pc -0.088
+19:12:44  admin-pc -0.139 | staff-pc -0.155 | guest-pc -0.180
+19:12:54  admin-pc -0.060 | staff-pc +0.156  << FLAGGED (model) | guest-pc -0.184
+   !! staff-pc: insider -> DISABLED account alice in 1.9 s after the window closed
+19:13:04  admin-pc -0.128 | staff-pc +0.160  << FLAGGED (model) | guest-pc -0.125
+   !! staff-pc: unclassified (already disabled) -> ALERT ONLY in 1.1 s after the window closed
+19:13:14  admin-pc -0.184 | staff-pc -0.065 | guest-pc -0.184
+19:13:24  admin-pc -0.184 | staff-pc -0.102 | guest-pc -0.061
+19:13:34  admin-pc -0.184 | staff-pc -0.085 | guest-pc -0.155
+19:13:44  admin-pc -0.096 | guest-pc -0.184
+19:13:54  admin-pc -0.140
+19:14:04  admin-pc -0.181 | staff-pc -0.168 | guest-pc -0.184
+19:14:14  admin-pc -0.185 | staff-pc -0.167 | guest-pc -0.113
+19:14:24  admin-pc -0.098 | staff-pc +0.079  << FLAGGED (model)
+   !! staff-pc: offhours -> ALERT ONLY in 1.1 s after the window closed
+19:14:34  admin-pc -0.183 | staff-pc +0.038  << FLAGGED (model) | guest-pc -0.107
+19:14:44  admin-pc -0.133 | staff-pc +0.073  << FLAGGED (model) | guest-pc -0.183
+19:14:54  admin-pc -0.168 | staff-pc +0.083  << FLAGGED (model) | guest-pc -0.185
+19:15:04  admin-pc -0.184 | staff-pc -0.075 | guest-pc -0.114
+19:15:14  admin-pc -0.185 | staff-pc -0.167 | guest-pc -0.184
+
+stopping

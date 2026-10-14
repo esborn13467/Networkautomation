@@ -1,0 +1,19 @@
+19:08:47 ATTACK dos
+19:09:48 reset
+unblocked 10.10.30.50
+reset done
+19:10:10 ATTACK portscan
+19:11:10 reset
+guest-pc: back in its VLAN after 1.1 s
+reset done
+19:11:34 ATTACK bruteforce
+19:12:35 reset
+guest-pc: back in its VLAN after 1.1 s
+reset done
+19:12:59 ATTACK insider
+19:14:00 reset
+staff-pc: back in its VLAN after 2.2 s
+reset done
+19:14:25 ATTACK offhours
+19:15:25 end
+19:15:29 DONE

@@ -724,6 +724,10 @@
   "t": "All nine lab nodes pushed their own data to Zabbix every 30 seconds: packets and bytes per second on their lab interfaces, dropped packets, CPU and memory use. Each push cycle was accepted in full (54 values, 0 failed). The two dashboard pages worked as designed: the network health page showed host availability and the traffic, CPU and memory of every node, and the threat detection page showed the anomaly score of each PC against the threshold line, the security alerts, the last action per PC and the detection-to-action time. A test alert sent through the alert channel appeared as a problem on the right host. Zabbix also raised a real problem of its own: both cEOS switches used over 90% of their memory allowance, which matches the memory pressure discussed next."
  },
  {
+  "k": "p",
+  "t": "A final rehearsal of the full demonstration repeated the end-to-end test with Zabbix and the push loop running. 5 of the 5 attacks were answered automatically with the expected action, 1.1 to 1.9 seconds after the window closed, and Zabbix received 113 anomaly scores and 6 response actions during the run; the security alerts opened 2 problems in Zabbix, one for each PC that was acted on, each staying open until an administrator closes it. No false alarms occurred and no user was blocked, quarantined or disabled by mistake. The lowest free memory during the run was 1272 MB."
+ },
+ {
   "k": "h2",
   "t": "5.7 Performance and Resource Use"
  },
