@@ -72,5 +72,10 @@ def status():
             v = it[0]["lastvalue"] if it else "no item yet"
             print(f"{n:10} ping", {"1": "UP", "0": "DOWN"}.get(v, v))
 
-TOKEN = api("user.login", {"username": USER, "password": PASSWORD})
-status() if len(sys.argv) > 1 and sys.argv[1] == "status" else setup()
+def login():
+    global TOKEN
+    TOKEN = api("user.login", {"username": USER, "password": PASSWORD})
+
+if __name__ == "__main__":
+    login()
+    status() if len(sys.argv) > 1 and sys.argv[1] == "status" else setup()

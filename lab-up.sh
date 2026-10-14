@@ -48,6 +48,10 @@ for i in $(seq 1 60); do
 done
 echo
 python zbx_setup.py
+python zt_zbx_push.py setup
+pkill -f zt_zbx_push.py 2>/dev/null
+nohup python zt_zbx_push.py run --interval 30 > /tmp/zt_zbx_push.log 2>&1 &
+echo "   all nodes now push metrics to Zabbix every 30 s (log: /tmp/zt_zbx_push.log)"
 
 echo "== 6/6 self-test"
 t() { d="$1"; want="$2"; shift 2

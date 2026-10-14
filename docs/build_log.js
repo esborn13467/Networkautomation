@@ -93,11 +93,11 @@ c.push(
     ["SPAN mirror to the SIEM", "Done, part of lab-up.sh"],
     ["Log collector (zt_collector.py)", "Done; on 14 Oct upgraded with a fast pcap reader; 10/10 offline tests pass"],
     ["Traffic generator (zt_traffic.py)", "Rebuilt on 14 Oct; 6/6 offline tests pass; live DoS smoke test passed"],
-    ["Baseline and attack datasets", "Collection started 14 Oct (about 65 minutes)"],
+    ["Baseline and attack datasets", "First run (14 Oct) set aside after an MTU fault was found; re-collection pending"],
     ["Isolation Forest model", "Not started"],
     ["Brute-force attack generator", "Not started"],
     ["Automated response engine", "Not started (design in section 9)"],
-    ["Zabbix push monitoring of every node", "Being built (section 8)"],
+    ["Zabbix push monitoring of every node", "Done and verified: 9 nodes push 54 values per cycle, test alert raised a Problem"],
     ["Report corrections (Ch. 1 to 4)", "Not started (list in section 11)"],
     ["Backup", "Automatic: ~/Desktop/zt-project-backup is refreshed after every git commit"],
   ], [40, 60]),
@@ -260,7 +260,8 @@ c.push(
   ], [22, 42, 36]),
   GAP(),
   P("24,397 packets were captured in 60 seconds; the two windows the attack only partly covered were dropped automatically. This meets the acceptance test: the attacker stands out by a factor of about 200 while the bystanders stay normal."),
-  H3("Dataset collection (started 14 October)"),
+  H3("Dataset collection and the MTU fault"),
+  P("The first full collection (11:03 to 12:08) completed, but the summary showed the insider attack produced only about 31 packets per window instead of megabytes. Investigation found an MTU mismatch: the Linux nodes used 9500-byte jumbo frames while the cEOS switches route at 1500, so large HTTP replies were dropped at the core. Pings and small pages fit, which is why nothing had looked wrong before. All Linux lab interfaces were set to MTU 1500 in the topology; afterwards a 20 MB download ran at about 6 MB/s and an insider smoke test showed about 15 MB per window. The first datasets were moved to data/old_mtu_bug/ as evidence and are being re-collected."),
   P("collect_datasets.sh runs four 10-minute normal runs and five runs of each attack at five intensities, so the model is also tested on weak attacks, not only obvious ones."),
   T(["Dataset", "Runs", "Intensity per run", "Planned use"], [
     ["normal_01 to normal_04", "4 x 600 s", "-", "2 training, 1 tuning, 1 final test"],
@@ -308,6 +309,7 @@ c.push(
     ["acc1 not configured by lab-up", "SSH not ready yet", "Wait for the SSH port before configuring"],
     ["Failed port stuck", "802.1X quiet period (60 s)", "Bounce the port or wait"],
     ["Phase 3 files missing on 14 Oct", "Created in a sandbox on another account", "Generator rebuilt and tested on the laptop"],
+    ["Insider downloads never happened; 200 kB downloads stalled", "Linux nodes used MTU 9500 but cEOS routes at 1500, so large replies were dropped at the core", "All Linux lab interfaces set to MTU 1500 in zt-dev.clab.yml; first datasets kept in data/old_mtu_bug/ and re-collected"],
     ["Little free RAM for captures", "Lab uses about 5.5 GB of 7.1 GB", "Headers-only capture, struct-based reader, Zabbix stopped during collection"],
   ], [28, 34, 38]),
 );
@@ -323,8 +325,19 @@ c.push(
   H2("8.2 What is monitored today"),
   B("Both switches through SNMP v2c (interface traffic, CPU, memory, uptime)."),
   B("All seven Linux nodes through ICMP ping (up or down only)."),
-  H2("8.3 Being added: every node pushes its own data"),
-  P("SNMP and ping are pull-based and tell little about the Linux nodes. A push script sends each node's interface packet and byte counters, CPU load and memory use to Zabbix trapper items every 30 seconds, and the response engine will use the same channel to push security alerts. The result is one Zabbix view of the whole topology: switches, servers, PCs and incidents."),
+  H2("8.3 Every node pushes its own data (zt_zbx_push.py)"),
+  P("SNMP and ping are pull-based and tell little about the Linux nodes. zt_zbx_push.py reads each container's own counters and sends them to Zabbix with the Zabbix sender protocol (TCP 10051) every 30 seconds. Zabbix converts the counters into per-second rates."),
+  T(["Item", "Meaning"], [
+    ["Data ports: packets in / out per second", "Traffic on the node's lab interfaces (management eth0 excluded)"],
+    ["Data ports: bytes in / out per second", "Throughput on the lab interfaces"],
+    ["Data ports: dropped packets per second", "Receive and transmit drops"],
+    ["Container CPU usage", "CPU time used by the container, in percent"],
+    ["Container memory in use", "Memory charged to the container (cgroup)"],
+    ["Security alert (detection pipeline)", "Text alerts from the response engine; each one opens a Problem"],
+  ], [45, 55]),
+  GAP(),
+  P("Triggers: high packet rate (over 1000 packets/s), container CPU above 80 % for 2 minutes, and security alert (stays open until an administrator closes it). A dashboard \"ZT Lab overview\" shows problems, host availability and graphs of traffic, CPU and memory for every node. lab-up.sh starts the push loop and lab-down.sh stops it."),
+  P("Verified on 14 October: all 9 nodes pushed 54 values per cycle with 0 failures, and a test alert for guest-pc appeared under Monitoring > Problems. Zabbix also reported that both cEOS switches use over 90 % of their memory allowance, which matches the RAM pressure seen throughout the project."),
 );
 
 // 9. Remaining
