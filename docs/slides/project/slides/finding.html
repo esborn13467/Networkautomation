@@ -1,0 +1,19 @@
+<section id="finding" data-transition="fade" style="background:#E9ECE6;color:#3B4754;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:56px">
+<div style="display:flex;flex-direction:column;gap:16px">
+<p style="font-size:24px;font-weight:600;color:#0B7A62;letter-spacing:3px;text-transform:uppercase">Key finding</p>
+<h2 style="font-family:'Space Grotesk', Arial, sans-serif;font-size:72px;font-weight:600;line-height:1.1;color:#0F1E2B;width:1550px">A model trained only on normal traffic cannot see what never changes in it</h2>
+</div>
+<div style="display:flex;gap:32px">
+<div style="flex:1;display:flex;flex-direction:column;gap:16px;background:#FBFBF8;border:1px solid #D9DED8;border-left:8px solid #E3A13B;border-radius:16px;padding:40px">
+<h3 style="font-family:'Space Grotesk', Arial, sans-serif;font-size:40px;font-weight:600;color:#0F1E2B">The problem</h3>
+<p style="font-size:30px;line-height:1.4">Failed logins and the off-hours flag are always zero in normal traffic, so the trees never split on them. Brute force and off-hours: 0% detected.</p>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:16px;background:#FBFBF8;border:1px solid #D9DED8;border-left:8px solid #0B7A62;border-radius:16px;padding:40px">
+<h3 style="font-family:'Space Grotesk', Arial, sans-serif;font-size:40px;font-weight:600;color:#0F1E2B">The fix</h3>
+<p style="font-size:30px;line-height:1.4">Train on unlabelled traffic in which attacks are rare, and add one rule for slow password guessing. Result: 100% detected, no extra false alarms.</p>
+</div>
+</div>
+<p style="position:absolute;left:128px;bottom:64px;width:1200px;font-size:24px;color:#5B6773">Zero Trust network with automated threat detection · Esborn Kihiu</p>
+<p style="position:absolute;right:128px;bottom:64px;width:200px;font-size:24px;color:#5B6773;text-align:right">14 / 18</p>
+<aside>This is the most important lesson from the project. Isolation Forest builds its trees only from features that vary in the training data. In normal traffic, failed logins and the off-hours flag are always zero, so the model was blind to them. Training on unlabelled traffic in which attacks are rare fixed this; the model still never sees a label. Slow password guessing changes only one feature, so one simple rule handles it, without extra false alarms.</aside>
+</section>

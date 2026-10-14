@@ -1,0 +1,21 @@
+<section id="zerotrust" data-transition="fade" style="background:#F4F5F0;color:#3B4754;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:48px">
+<div style="display:flex;flex-direction:column;gap:12px">
+<p style="font-size:24px;font-weight:600;color:#0B7A62;letter-spacing:3px;text-transform:uppercase">Zero Trust controls</p>
+<h2 style="font-family:'Space Grotesk', Arial, sans-serif;font-size:64px;font-weight:600;line-height:1.1;color:#0F1E2B">Identity decides where each user may go</h2>
+</div>
+<table style="font-size:28px;color:#3B4754">
+<tr style="background:#E6EAE4"><th style="width:18%">User</th><th style="width:18%">Role</th><th style="width:14%">VLAN</th><th style="width:50%">May reach</th></tr>
+<tr><td>bob</td><td>Admin</td><td>10</td><td>Internal network, DMZ web, internet</td></tr>
+<tr><td>alice</td><td>Staff</td><td>20</td><td>Internal network, DMZ web, internet</td></tr>
+<tr><td>guest1</td><td>Guest</td><td>30</td><td>DMZ web and internet only</td></tr>
+<tr style="background:#FBF1DE"><td>quarantined</td><td>Flagged host</td><td>99</td><td>RADIUS login and SIEM only</td></tr>
+</table>
+<div style="display:flex;gap:24px">
+<p style="flex:1;font-size:26px;background:#FBFBF8;border:1px solid #D9DED8;border-radius:12px;padding:24px">No traffic before an 802.1X login</p>
+<p style="flex:1;font-size:26px;background:#FBFBF8;border:1px solid #D9DED8;border-radius:12px;padding:24px">ZT_POLICY ACL on the core switch</p>
+<p style="flex:1;font-size:26px;background:#FBFBF8;border:1px solid #D9DED8;border-radius:12px;padding:24px">The DMZ can never open a connection inward</p>
+</div>
+<p style="position:absolute;left:128px;bottom:64px;width:1200px;font-size:24px;color:#5B6773">Zero Trust network with automated threat detection · Esborn Kihiu</p>
+<p style="position:absolute;right:128px;bottom:64px;width:200px;font-size:24px;color:#5B6773;text-align:right">6 / 18</p>
+<aside>A port stays closed until the user logs in with 802.1X. FreeRADIUS checks the password and returns the VLAN, so the VLAN follows the user's identity, not the port. Guests reach only the DMZ web server and the internet. A quarantined host may only log in again and be investigated. A wrong password leaves the port closed. I will show this live in a moment.</aside>
+</section>

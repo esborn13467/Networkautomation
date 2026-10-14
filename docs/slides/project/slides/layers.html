@@ -1,0 +1,26 @@
+<section id="layers" data-transition="fade" style="background:#F4F5F0;color:#3B4754;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:56px">
+<div style="display:flex;flex-direction:column;gap:12px">
+<p style="font-size:24px;font-weight:600;color:#0B7A62;letter-spacing:3px;text-transform:uppercase">What was built</p>
+<h2 style="font-family:'Space Grotesk', Arial, sans-serif;font-size:64px;font-weight:600;line-height:1.1;color:#0F1E2B">Three layers working together</h2>
+</div>
+<div style="display:flex;gap:32px">
+<div style="flex:1;display:flex;flex-direction:column;gap:20px;background:#FBFBF8;border:1px solid #D9DED8;border-top:8px solid #0B7A62;border-radius:16px;padding:40px">
+<p style="font-size:24px;font-weight:600;color:#0B7A62">LAYER 1</p>
+<h3 style="font-family:'Space Grotesk', Arial, sans-serif;font-size:40px;font-weight:600;color:#0F1E2B">Zero Trust network</h3>
+<p style="font-size:28px;line-height:1.45">Nobody gets on without an 802.1X login. RADIUS places each user in the VLAN for their role. ACLs and a firewall limit every segment.</p>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:20px;background:#FBFBF8;border:1px solid #D9DED8;border-top:8px solid #0B7A62;border-radius:16px;padding:40px">
+<p style="font-size:24px;font-weight:600;color:#0B7A62">LAYER 2</p>
+<h3 style="font-family:'Space Grotesk', Arial, sans-serif;font-size:40px;font-weight:600;color:#0F1E2B">Detection</h3>
+<p style="font-size:28px;line-height:1.45">A mirror port copies user traffic to the SIEM. Python builds 8 features per PC every 10 seconds, and an Isolation Forest scores each one.</p>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:20px;background:#FBFBF8;border:1px solid #D9DED8;border-top:8px solid #0B7A62;border-radius:16px;padding:40px">
+<p style="font-size:24px;font-weight:600;color:#0B7A62">LAYER 3</p>
+<h3 style="font-family:'Space Grotesk', Arial, sans-serif;font-size:40px;font-weight:600;color:#0F1E2B">Automated response</h3>
+<p style="font-size:28px;line-height:1.45">Each attack type gets its own action: block, quarantine, disable the account or alert. Every step shows up in Zabbix.</p>
+</div>
+</div>
+<p style="position:absolute;left:128px;bottom:64px;width:1200px;font-size:24px;color:#5B6773">Zero Trust network with automated threat detection · Esborn Kihiu</p>
+<p style="position:absolute;right:128px;bottom:64px;width:200px;font-size:24px;color:#5B6773;text-align:right">4 / 18</p>
+<aside>The system has three layers. The first decides who may connect and where they may go. The second watches what each device does once it is inside. The third acts on what the second finds, without waiting for a person. The important part is that the response uses the Zero Trust controls themselves: the ACL to block, and the identity-based VLAN to quarantine.</aside>
+</section>

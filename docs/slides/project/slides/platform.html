@@ -1,0 +1,18 @@
+<section id="platform" data-transition="fade" style="background:#F4F5F0;color:#3B4754;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:48px">
+<div style="display:flex;flex-direction:column;gap:12px">
+<p style="font-size:24px;font-weight:600;color:#0B7A62;letter-spacing:3px;text-transform:uppercase">Platform</p>
+<h2 style="font-family:'Space Grotesk', Arial, sans-serif;font-size:64px;font-weight:600;line-height:1.1;color:#0F1E2B">Why Containerlab instead of Packet Tracer</h2>
+</div>
+<table style="font-size:28px;color:#3B4754">
+<tr style="background:#E6EAE4"><th style="width:40%">Need</th><th style="width:28%">Packet Tracer</th><th style="width:32%">Containerlab + cEOS</th></tr>
+<tr><td>Real switch software</td><td>Simulated IOS</td><td>Real Arista EOS</td></tr>
+<tr><td>Python can log in over SSH</td><td>No</td><td>Yes</td></tr>
+<tr><td>Real packets for detection</td><td>No</td><td>Yes</td></tr>
+<tr><td>Rebuilding the lab</td><td>Saved .pkt file</td><td>One command</td></tr>
+<tr><td>Cost</td><td>Free</td><td>Free</td></tr>
+</table>
+<p style="font-size:30px;line-height:1.4;color:#0F1E2B">The response engine has to log in to the switches and the detector needs real packets. Packet Tracer offers neither, so the design was rebuilt on Containerlab, with FreeRADIUS in place of Cisco ISE.</p>
+<p style="position:absolute;left:128px;bottom:64px;width:1200px;font-size:24px;color:#5B6773">Zero Trust network with automated threat detection · Esborn Kihiu</p>
+<p style="position:absolute;right:128px;bottom:64px;width:200px;font-size:24px;color:#5B6773;text-align:right">7 / 18</p>
+<aside>The proposal planned Packet Tracer and Cisco ISE. In the first phase I found that Packet Tracer cannot be reached by Python over SSH and gives no real packets, so automated detection and response would have been impossible. Containerlab runs real Arista switch software in containers on one laptop. FreeRADIUS replaces ISE and does the same job: 802.1X and VLAN assignment by identity. The security design itself did not change.</aside>
+</section>

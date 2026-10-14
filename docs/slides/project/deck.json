@@ -1,0 +1,20 @@
+{
+  "v": 4,
+  "createdOnFiles": {"v": 1, "at": "2026-10-14T19:25:00+03:00"},
+  "lists": "css",
+  "title": "Zero Trust ML Defense — Final Presentation",
+  "cover": "cover",
+  "order": ["cover", "problem", "objectives", "layers", "architecture", "zerotrust", "platform", "detection", "response", "demo", "method", "headline", "bydesign", "finding", "e2e", "limits", "conclusion", "thanks"],
+  "sections": {
+    "intro": {"description": "The problem the project addresses and its four objectives.", "start": "cover"},
+    "design": {"description": "What was built: the Zero Trust network, detection and automated response.", "start": "layers"},
+    "demo": {"description": "Live demonstration of attacks being detected and answered.", "start": "demo"},
+    "results": {"description": "How the system was tested and what the results show.", "start": "method"},
+    "close": {"description": "Limitations, conclusion, future work and questions.", "start": "limits"}
+  },
+  "faces": {
+    "space-grotesk": {"family": "Space Grotesk", "href": "https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400..700&display=swap"},
+    "ibm-plex-sans": {"family": "IBM Plex Sans", "href": "https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;600&display=swap"}
+  },
+  "designSystems": []
+}

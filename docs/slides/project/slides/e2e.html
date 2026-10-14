@@ -1,0 +1,18 @@
+<section id="e2e" data-transition="fade" style="background:#F4F5F0;color:#3B4754;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:48px">
+<div style="display:flex;flex-direction:column;gap:12px">
+<p style="font-size:24px;font-weight:600;color:#0B7A62;letter-spacing:3px;text-transform:uppercase">Live pipeline, final rehearsal</p>
+<h2 style="font-family:'Space Grotesk', Arial, sans-serif;font-size:64px;font-weight:600;line-height:1.1;color:#0F1E2B">Every attack answered without a person</h2>
+</div>
+<table style="font-size:28px;color:#3B4754">
+<tr style="background:#E6EAE4"><th style="width:30%">Attack</th><th style="width:18%">Classified as</th><th style="width:34%">Automatic action</th><th style="width:18%">Time</th></tr>
+<tr><td>DoS from guest PC</td><td>DoS</td><td>Blocked 10.10.30.50</td><td>1.2 s</td></tr>
+<tr><td>Port scan from guest PC</td><td>Port scan</td><td>Quarantined guest PC</td><td>1.9 s</td></tr>
+<tr><td>Brute force, guest port</td><td>Brute force</td><td>Quarantined guest PC</td><td>1.9 s</td></tr>
+<tr><td>Insider download, staff</td><td>Insider</td><td>Disabled account alice</td><td>1.9 s</td></tr>
+<tr><td>Off-hours, staff PC</td><td>Off-hours</td><td>Alert only</td><td>1.1 s</td></tr>
+</table>
+<p style="font-size:28px;line-height:1.4;color:#0F1E2B">Time from the end of the 10-second window to the action applied. Zabbix running throughout: no false alarms, and the scores and actions appeared on its dashboard.</p>
+<p style="position:absolute;left:128px;bottom:64px;width:1200px;font-size:24px;color:#5B6773">Zero Trust network with automated threat detection · Esborn Kihiu</p>
+<p style="position:absolute;right:128px;bottom:64px;width:200px;font-size:24px;color:#5B6773;text-align:right">15 / 18</p>
+<aside>This is the final rehearsal of the full system on 14 October, with Zabbix running. Each attack was launched for forty seconds while all three PCs generated normal traffic. Every attack was detected in its first or second window, classified correctly and answered with the right action, within two seconds of the window closing. Nobody touched anything. No normal user was flagged during this run.</aside>
+</section>

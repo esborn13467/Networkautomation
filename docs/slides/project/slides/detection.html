@@ -1,0 +1,43 @@
+<section id="detection" data-transition="fade" style="background:#F4F5F0;color:#3B4754;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:48px">
+<div style="display:flex;flex-direction:column;gap:12px">
+<p style="font-size:24px;font-weight:600;color:#0B7A62;letter-spacing:3px;text-transform:uppercase">Detection</p>
+<h2 style="font-family:'Space Grotesk', Arial, sans-serif;font-size:64px;font-weight:600;line-height:1.1;color:#0F1E2B">Every PC is scored every 10 seconds</h2>
+</div>
+<div style="display:flex;gap:16px;align-items:center">
+<div style="flex:1;display:flex;flex-direction:column;gap:12px;background:#FBFBF8;border:1px solid #D9DED8;border-radius:16px;padding:32px">
+<h3 style="font-family:'Space Grotesk', Arial, sans-serif;font-size:36px;font-weight:600;color:#0F1E2B">Capture</h3>
+<p style="font-size:26px;line-height:1.4">Mirror port copies user traffic to the SIEM</p>
+</div>
+<x-shape kind="arrow-right" style="background:#0B7A62;width:48px;height:24px"></x-shape>
+<div style="flex:1;display:flex;flex-direction:column;gap:12px;background:#FBFBF8;border:1px solid #D9DED8;border-radius:16px;padding:32px">
+<h3 style="font-family:'Space Grotesk', Arial, sans-serif;font-size:36px;font-weight:600;color:#0F1E2B">Features</h3>
+<p style="font-size:26px;line-height:1.4">8 numbers per PC per 10-second window</p>
+</div>
+<x-shape kind="arrow-right" style="background:#0B7A62;width:48px;height:24px"></x-shape>
+<div style="flex:1;display:flex;flex-direction:column;gap:12px;background:#FBFBF8;border:1px solid #D9DED8;border-radius:16px;padding:32px">
+<h3 style="font-family:'Space Grotesk', Arial, sans-serif;font-size:36px;font-weight:600;color:#0F1E2B">Score</h3>
+<p style="font-size:26px;line-height:1.4">Isolation Forest, plus a rule: 5 or more failed logins</p>
+</div>
+<x-shape kind="arrow-right" style="background:#0B7A62;width:48px;height:24px"></x-shape>
+<div style="flex:1;display:flex;flex-direction:column;gap:12px;background:#FBFBF8;border:1px solid #D9DED8;border-radius:16px;padding:32px">
+<h3 style="font-family:'Space Grotesk', Arial, sans-serif;font-size:36px;font-weight:600;color:#0F1E2B">Classify</h3>
+<p style="font-size:26px;line-height:1.4">Attack type read from the features</p>
+</div>
+</div>
+<div style="display:flex;flex-direction:column;gap:16px">
+<p style="font-size:24px;font-weight:600;color:#0B7A62;letter-spacing:3px;text-transform:uppercase">The eight features</p>
+<div style="display:flex;flex-wrap:wrap;gap:12px">
+<p style="font-size:24px;background:#E6EAE4;border-radius:999px;padding:8px 20px">packet count</p>
+<p style="font-size:24px;background:#E6EAE4;border-radius:999px;padding:8px 20px">average packet size</p>
+<p style="font-size:24px;background:#E6EAE4;border-radius:999px;padding:8px 20px">bytes transferred</p>
+<p style="font-size:24px;background:#E6EAE4;border-radius:999px;padding:8px 20px">connection duration</p>
+<p style="font-size:24px;background:#E6EAE4;border-radius:999px;padding:8px 20px">failed logins</p>
+<p style="font-size:24px;background:#E6EAE4;border-radius:999px;padding:8px 20px">destination ports</p>
+<p style="font-size:24px;background:#E6EAE4;border-radius:999px;padding:8px 20px">requests per minute</p>
+<p style="font-size:24px;background:#E6EAE4;border-radius:999px;padding:8px 20px">off-hours flag</p>
+</div>
+</div>
+<p style="position:absolute;left:128px;bottom:64px;width:1200px;font-size:24px;color:#5B6773">Zero Trust network with automated threat detection · Esborn Kihiu</p>
+<p style="position:absolute;right:128px;bottom:64px;width:200px;font-size:24px;color:#5B6773;text-align:right">8 / 18</p>
+<aside>The access switch copies all user traffic to the SIEM host. Every ten seconds the pipeline turns each PC's traffic into eight numbers, the features from Chapter 4. Failed logins come from the RADIUS log. The Isolation Forest isolates unusual windows in fewer random splits, which gives them a higher score. One policy rule catches slow password guessing, which the model alone could not see. A flagged window is then classified from its features.</aside>
+</section>

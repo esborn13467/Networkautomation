@@ -1,0 +1,20 @@
+<section id="architecture" data-transition="fade" style="background:#F4F5F0;color:#3B4754;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:row;gap:64px;align-items:start">
+<img src="/_blob/900ebaeae3ee776ee7aa480a22d094e0" alt="Architecture diagram: internet, edge firewall and DMZ web server, core switch with ZT_POLICY, access switch with three PCs, FreeRADIUS, and the SIEM pipeline feeding Zabbix" style="width:792px;height:792px;object-fit:contain;background:#FFFFFF;border:1px solid #D9DED8;border-radius:16px">
+<div style="flex:1;display:flex;flex-direction:column;gap:40px">
+<div style="display:flex;flex-direction:column;gap:12px">
+<p style="font-size:24px;font-weight:600;color:#0B7A62;letter-spacing:3px;text-transform:uppercase">Architecture</p>
+<h2 style="font-family:'Space Grotesk', Arial, sans-serif;font-size:64px;font-weight:600;line-height:1.1;color:#0F1E2B">The network as built</h2>
+</div>
+<ul style="font-size:30px;line-height:1.75">
+<li>Two Arista cEOS switches: core and access</li>
+<li>FreeRADIUS for 802.1X logins</li>
+<li>Linux edge firewall and a DMZ web server</li>
+<li>Admin, staff and guest PCs, each in its own VLAN</li>
+<li>SIEM host receives a copy of all user traffic</li>
+<li>Zabbix monitors all nine nodes</li>
+<li>Runs on one laptop and rebuilds with one command</li>
+</ul>
+</div>
+<p style="position:absolute;right:128px;bottom:64px;width:200px;font-size:24px;color:#5B6773;text-align:right">5 / 18</p>
+<aside>This is the network as built, Figure 4.7 in the report. Users connect through the access switch, which checks their login with FreeRADIUS. The core switch routes between the VLANs and enforces the policy ACL. The edge firewall protects the inside and hosts the DMZ. The access switch copies all user traffic to the SIEM host, where the detection pipeline runs. The red lines are the automated responses: a block on the core, or a quarantine through RADIUS.</aside>
+</section>
