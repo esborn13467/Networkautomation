@@ -25,6 +25,8 @@ import csv
 import os
 import random
 import re
+import socket
+import struct
 import subprocess
 import threading
 import time
@@ -177,26 +179,54 @@ def learn_endpoints():
 
 
 def read_packets(pcap_path):
-    from scapy.all import rdpcap, IP, TCP, UDP
+    """Parse a classic pcap file with struct (much faster and lighter than scapy).
+    Handles Ethernet frames with or without one 802.1Q tag; IPv4 only."""
     pkts = []
-    for p in rdpcap(pcap_path):
-        if IP not in p:
-            continue
-        ip = p[IP]
-        sport = dport = 0
-        syn = False
-        if TCP in p:
-            sport, dport = p[TCP].sport, p[TCP].dport
-            f = int(p[TCP].flags)
-            syn = bool(f & 0x02) and not (f & 0x10)
-        elif UDP in p:
-            sport, dport = p[UDP].sport, p[UDP].dport
-        pkts.append((float(p.time), ip.src, ip.dst, ip.proto, sport, dport, int(ip.len), syn))
+    with open(pcap_path, "rb") as f:
+        head = f.read(24)
+        if len(head) < 24:
+            return pkts
+        magic = head[:4]
+        if magic in (b"\xd4\xc3\xb2\xa1", b"\x4d\x3c\xb2\xa1"):
+            end = "<"
+        elif magic in (b"\xa1\xb2\xc3\xd4", b"\xa1\xb2\x3c\x4d"):
+            end = ">"
+        else:
+            raise ValueError("not a classic pcap file")
+        nano = magic in (b"\x4d\x3c\xb2\xa1", b"\xa1\xb2\x3c\x4d")
+        rec = struct.Struct(end + "IIII")
+        while True:
+            h = f.read(16)
+            if len(h) < 16:
+                break
+            sec, frac, incl, _orig = rec.unpack(h)
+            data = f.read(incl)
+            ts = sec + frac / (1e9 if nano else 1e6)
+            off, etype = 14, data[12:14] if len(data) >= 14 else b""
+            if etype == b"\x81\x00":
+                off, etype = 18, data[16:18]
+            if etype != b"\x08\x00" or len(data) < off + 20:
+                continue
+            ihl = (data[off] & 0x0F) * 4
+            ip_len = struct.unpack("!H", data[off + 2:off + 4])[0]
+            proto = data[off + 9]
+            src = socket.inet_ntoa(data[off + 12:off + 16])
+            dst = socket.inet_ntoa(data[off + 16:off + 20])
+            l4 = off + ihl
+            sport = dport = 0
+            syn = False
+            if proto in (6, 17) and len(data) >= l4 + 4:
+                sport, dport = struct.unpack("!HH", data[l4:l4 + 4])
+                if proto == 6 and len(data) >= l4 + 14:
+                    fl = data[l4 + 13]
+                    syn = bool(fl & 0x02) and not (fl & 0x10)
+            pkts.append((ts, src, dst, proto, sport, dport, ip_len, syn))
     return pkts
 
 
-def collect_batch(seconds, label="", attack="", sim_hours=None, keep_pcap=None):
-    """Capture `seconds` of mirrored traffic + RADIUS rejects, return feature rows."""
+def capture(seconds, keep_pcap=None):
+    """Capture `seconds` of mirrored traffic + RADIUS rejects.
+    Returns (packets, rejects, mac_to_ip, t0) for build_rows."""
     mac_to_ip = learn_endpoints()
     if not mac_to_ip:
         raise SystemExit("Could not read PC MAC/IP from the lab. Is it running?")
@@ -215,8 +245,9 @@ def collect_batch(seconds, label="", attack="", sim_hours=None, keep_pcap=None):
     th = threading.Thread(target=reader, daemon=True)
     th.start()
 
+    # -s 128 keeps headers only: features need lengths and ports, not payloads
     t0 = time.time()
-    sh(f"docker exec {LAB}siem timeout {seconds} tcpdump -n -i eth1 -U -w /tmp/cap.pcap ip", timeout=seconds + 30)
+    sh(f"docker exec {LAB}siem timeout {seconds} tcpdump -n -s 128 -i eth1 -U -w /tmp/cap.pcap ip", timeout=seconds + 30)
     tail.terminate()
     th.join(timeout=2)
 
@@ -225,6 +256,12 @@ def collect_batch(seconds, label="", attack="", sim_hours=None, keep_pcap=None):
     pkts = read_packets(local)
     with lock:
         rj = list(rejects)
+    return pkts, rj, mac_to_ip, t0
+
+
+def collect_batch(seconds, label="", attack="", sim_hours=None, keep_pcap=None):
+    """Capture `seconds` of mirrored traffic + RADIUS rejects, return feature rows."""
+    pkts, rj, mac_to_ip, t0 = capture(seconds, keep_pcap)
     return build_rows(pkts, rj, mac_to_ip, t0, label, attack, sim_hours)
 
 

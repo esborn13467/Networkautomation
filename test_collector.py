@@ -92,4 +92,31 @@ pk = http_flow(T0 + 1, "10.10.20.50", 42000) + http_flow(T0 + 13, "10.10.20.50",
 rows = build_rows(pk, [], {}, T0, "", "", (10, 10))
 assert [x["packet_count"] for x in rows] == [5, 5], rows
 print("PASS windowing: two 10 s windows -> two rows")
+
+# ---- 9. fast pcap reader agrees with scapy (TCP SYN, ACK, UDP, ICMP, VLAN tag, truncated capture) ----
+import os, tempfile
+from scapy.all import Ether, Dot1Q, IP, TCP, UDP, ICMP, Raw, wrpcap
+from zt_collector import read_packets
+frames = [
+    Ether() / IP(src="10.10.30.50", dst="10.10.40.10") / TCP(sport=40000, dport=80, flags="S"),
+    Ether() / IP(src="10.10.40.10", dst="10.10.30.50") / TCP(sport=80, dport=40000, flags="SA"),
+    Ether() / IP(src="10.10.20.50", dst="10.10.40.10") / TCP(sport=40001, dport=80, flags="A") / Raw(b"x" * 1400),
+    Ether() / IP(src="10.10.10.50", dst="1.1.1.1") / UDP(sport=5353, dport=53) / Raw(b"q" * 30),
+    Ether() / IP(src="10.10.10.50", dst="10.10.10.1") / ICMP(),
+    Ether() / Dot1Q(vlan=30) / IP(src="10.10.30.50", dst="10.10.40.10") / TCP(sport=40002, dport=22, flags="S"),
+]
+for i, fr in enumerate(frames):
+    fr.time = T0 + i * 0.5
+path = os.path.join(tempfile.mkdtemp(), "t.pcap")
+wrpcap(path, frames)
+os.system(f"tcpdump -r {path} -s 128 -w {path}.snap 2>/dev/null")  # truncate like the live capture, if tcpdump exists
+got = read_packets(path + ".snap" if os.path.exists(path + ".snap") else path)
+want = [(T0, "10.10.30.50", "10.10.40.10", 6, 40000, 80, 40, True),
+        (T0 + 0.5, "10.10.40.10", "10.10.30.50", 6, 80, 40000, 40, False),
+        (T0 + 1.0, "10.10.20.50", "10.10.40.10", 6, 40001, 80, 1440, False),
+        (T0 + 1.5, "10.10.10.50", "1.1.1.1", 17, 5353, 53, 58, False),
+        (T0 + 2.0, "10.10.10.50", "10.10.10.1", 1, 0, 0, 28, False),
+        (T0 + 2.5, "10.10.30.50", "10.10.40.10", 6, 40002, 22, 40, True)]
+assert [(round(p[0], 3),) + p[1:] for p in got] == want, got
+print("PASS pcap reader: TCP/UDP/ICMP, SYN flag, 802.1Q tag, real IP length kept after truncation")
 print("\nALL TESTS PASSED")
