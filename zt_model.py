@@ -211,7 +211,6 @@ def charts(results, summaries):
     ax.set_xticks(xs, [LABEL[t] for t in types])
     ax.set_ylim(0, 112)
     ax.set_ylabel("Attack windows detected (%)", color=INK2, fontsize=9)
-    ax.set_title("Detection rate by attack type (5-fold, held-out runs)", color=INK, fontsize=11, loc="left")
     ax.legend(frameon=False, fontsize=8, loc="upper left", bbox_to_anchor=(0, -0.12), ncol=3)
     fig.text(0.99, 0.01, f"False-positive rate: normal-only {fpr['normal-only']:.1f}%, mixed {fpr['mixed']:.1f}%, "
              f"hybrid {fpr['hybrid']:.1f}%",
@@ -235,7 +234,6 @@ def charts(results, summaries):
     ax.text(len(order) - 0.5, thr, f" threshold {thr:.3f}", va="bottom", ha="right", fontsize=8, color="#d03b3b")
     ax.set_xticks(range(len(order)), [LABEL[t] for t in order])
     ax.set_ylabel("Anomaly score", color=INK2, fontsize=9)
-    ax.set_title("Anomaly score of every test window (mixed training)", color=INK, fontsize=11, loc="left")
     fig.tight_layout()
     fig.savefig(os.path.join(RESULTS, "score_distribution.png"), dpi=200)
     plt.close(fig)
@@ -252,7 +250,6 @@ def charts(results, summaries):
     ax.set_yticks([0, 1], ["Normal", "Attack"])
     ax.set_xlabel("Predicted", color=INK2, fontsize=9)
     ax.set_ylabel("Actual", color=INK2, fontsize=9)
-    ax.set_title("Confusion matrix (hybrid detector)", color=INK, fontsize=11, loc="left")
     ax.tick_params(colors=INK2, labelsize=9)
     for s in ax.spines.values():
         s.set_visible(False)
