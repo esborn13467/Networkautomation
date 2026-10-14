@@ -40,6 +40,7 @@ topology:
         - ip addr add 10.10.10.5/24 dev eth1
         - ip link set eth1 mtu 1500 up
         - ip route replace default via 10.10.10.1
+        - touch /etc/freeradius/3.0/zt_dynamic
         - sh -c "nohup freeradius -X > /tmp/radius.log 2>&1 &"
     siem:
       kind: linux

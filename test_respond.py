@@ -22,6 +22,18 @@ class FakeEngine(zr.ResponseEngine):
         self.sent.append((switch, commands))
         return ""
 
+    def apply_radius_rules(self):
+        self.rules_text = zr.NetworkActions.radius_rules(self.state["radius"])
+
+    def readdress(self, pc, ip, gw):
+        self.addr = (pc, ip, gw)
+
+    def wait_port(self, port, want, timeout=20):
+        return True, 1.0
+
+    def bounce(self, port):
+        self.push("acc1", zr.NetworkActions.bounce_port(port))
+
 
 # ---- 1. exact CLI commands ----
 assert zr.NetworkActions.block_ip("10.10.30.50", 71) == ["ip access-list ZT_POLICY", "71 deny ip host 10.10.30.50 any"]
@@ -66,4 +78,31 @@ n = len(e2.sent)
 r = e2.alert_only("10.10.20.50", "offhours", reason="model")
 assert r["action"] == "ALERT ONLY" and len(e2.sent) == n
 print("PASS alert-only: incident logged, no commands sent")
+
+# ---- 7. RADIUS rules: quarantine overrides the VLAN but keeps the password check; disable rejects ----
+txt = zr.NetworkActions.radius_rules({"guest1": "quarantine", "alice": "disabled"})
+assert 'Tunnel-Private-Group-Id := "99"' in txt and "Fall-Through = Yes" in txt
+assert "alice Auth-Type := Reject" in txt and "Cleartext-Password" not in txt
+assert zr.NetworkActions.radius_rules({}) == ""
+assert zr.NetworkActions.bounce_port("Ethernet4") == ["interface Ethernet4", "shutdown", "no shutdown"]
+assert zr.NetworkActions.quarantine_ip("10.10.30.50") == "10.10.99.50"
+print("PASS RADIUS rule text, port bounce commands, quarantine address")
+
+# ---- 8. quarantine: rule written, port bounced, address moved, logged once ----
+e3 = FakeEngine()
+e3.state = {"blocked": {}, "radius": {}}
+q = e3.quarantine("guest-pc", attack="portscan", reason="model")
+assert q["action"] == "QUARANTINED guest-pc" and "in VLAN 99" in q["detail"]
+assert 'guest1' in e3.rules_text and e3.sent[-1] == ("acc1", ["interface Ethernet4", "shutdown", "no shutdown"])
+assert e3.addr == ("guest-pc", "10.10.99.50", "10.10.99.1")
+assert e3.quarantine("guest-pc") is None
+print("PASS quarantine: RADIUS rule, port bounce, 10.10.99.50, no double action")
+
+# ---- 9. restore puts the PC back on its own address and clears the rule ----
+assert e3.restore("guest-pc") and e3.state["radius"] == {} and e3.rules_text == ""
+assert e3.addr == ("guest-pc", "10.10.30.50", "10.10.30.1")
+assert not e3.restore("guest-pc")
+d = e3.disable("staff-pc", attack="insider")
+assert d["action"] == "DISABLED account alice" and e3.state["radius"] == {"alice": "disabled"}
+print("PASS release restores address; disable rejects the account")
 print("\nALL TESTS PASSED")

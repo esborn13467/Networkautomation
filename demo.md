@@ -191,7 +191,7 @@ docker exec clab-zt-core Cli -p 15 -c "show ip access-lists ZT_POLICY"   # new d
 docker exec clab-zt-guest-pc curl -s -m 4 http://10.10.40.10 || echo BLOCKED
 ```
 
-Reset before the next attack:
+Reset before the next attack (✅ ready):
 
 ```bash
 python zt_respond.py reset
@@ -216,12 +216,18 @@ docker exec clab-zt-radius grep -c "Sent Access-Reject" /tmp/radius.log   # reje
 
 **Expected:** score crosses the line → classified `portscan` / `bruteforce` → **QUARANTINE**.
 
-Prove the quarantine:
+Prove the quarantine (✅ response tested by hand 14 Oct; automatic trigger comes with the pipeline):
 
 ```bash
-docker exec clab-zt-acc1 Cli -p 15 -c "show dot1x hosts"          # host no longer in its VLAN
+docker exec clab-zt-acc1 Cli -p 15 -c "show dot1x hosts"          # Et4 guest1 SUCCESS 99 QUARANTINE
+docker exec clab-zt-guest-pc ip -4 addr show eth1                 # now 10.10.99.50
+docker exec clab-zt-guest-pc curl -s -m 3 http://10.10.40.10 || echo "no access"
 docker exec clab-zt-core Cli -p 15 -c "show ip access-lists ZT_POLICY"   # lines 20-40 counting the quarantined traffic
 ```
+
+The same action can be triggered by hand if needed: `python zt_respond.py quarantine guest-pc`.
+
+**Optional, compromised account:** `python zt_respond.py disable staff-pc` rejects alice at RADIUS and bounces her port; `show dot1x hosts` shows Et3 `FAILED` and staff-pc has no network. `python zt_respond.py enable staff-pc` restores it.
 
 **Say:** "The device is isolated automatically. It can still reach RADIUS to re-authenticate and the SIEM for investigation, and nothing else. No administrator had to be awake."
 

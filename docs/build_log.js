@@ -104,7 +104,7 @@ c.push(
     ["Baseline and attack datasets", "Done: 594 normal rows from 4 runs, 20 attack windows each for DoS, port scan, insider, off-hours and brute force"],
     ["Isolation Forest model", "Done: hybrid detector (IF + brute-force rule), 5-fold accuracy 99.0%, recall 100%, false positives 1.1%"],
     ["Brute-force attack generator", "Done: 10 to 80 failed logins per window; 5 runs collected"],
-    ["Automated response engine", "In progress: block IP and alert-only done and tested live; quarantine and disable-account next"],
+    ["Automated response engine", "All four actions built and tested live: block IP, quarantine, disable account, alert only"],
     ["Zabbix push monitoring of every node", "Done and verified: 9 nodes push 54 values per cycle, test alert raised a Problem"],
     ["Report corrections (Ch. 1 to 4)", "Not started (list in section 12)"],
     ["Backup", "Automatic: ~/Desktop/zt-project-backup is refreshed after every git commit"],
@@ -350,6 +350,20 @@ c.push(
   P("test_respond.py checks the commands, de-duplication, line reuse, state persistence, infrastructure protection and alert-only behaviour offline (6 checks, all pass)."),
 );
 
+c.push(
+  H2("6.7 Response engine, part 2: quarantine and disable account"),
+  P("Because the access ports get their VLAN from RADIUS at login, quarantine is identity-based, the way Cisco ISE does it. The engine writes a rule into /etc/freeradius/3.0/zt_dynamic in the radius container (included at the top of radius/users, so it overrides the normal entry), reloads FreeRADIUS, and bounces the PC's access port. The PC's supplicant logs in again at once and RADIUS now answers with VLAN 99. The lab has no DHCP, so the engine then gives the PC its quarantine address (10.10.30.50 becomes 10.10.99.50), exactly as lab-up.sh addresses the PCs. Disable account uses the same mechanism with a reject rule: the PC fails 802.1X and has no network at all."),
+  T(["Live test (14 Oct)", "Result"], [
+    ["quarantine guest-pc", "guest1 in VLAN 99 QUARANTINE 1.1 s after the bounce; action applied in 1.4 s including SSH login; guest-pc lost web access, staff-pc unaffected"],
+    ["What a quarantined PC may reach", "ZT_POLICY counters: line 20 (RADIUS udp 1812) 1 packet permitted, line 30 (SIEM) 2 permitted, line 40 (everything else) 11 denied: web, staff PC, internet, gateway, RADIUS ping"],
+    ["release guest-pc", "Back in VLAN 30 after 1.1 s; web access restored"],
+    ["disable staff-pc (alice)", "Port Et3 FAILED 1.1 s after the bounce; staff-pc has no network"],
+    ["enable staff-pc", "Back in VLAN 20 after 2.2 s; web access restored"],
+  ], [30, 70]),
+  GAP(),
+  P("Three problems were found and fixed on the way: FreeRADIUS ignores a reload signal when only an included file changed, so the engine also touches the main users file; Netmiko's is_alive() check sends a stray byte that leaves the Arista CLI out of step and makes the next command time out, so the engine checks the SSH transport instead; and the dynamic rules file must exist before FreeRADIUS starts, so the topology now creates it. test_respond.py covers the rule text, port bounce, quarantine address, de-duplication and restore (9 checks, all pass)."),
+);
+
 // 6. Evidence
 c.push(
   H1("7. Verified Evidence for Chapter 5"),
@@ -391,6 +405,8 @@ c.push(
     ["Insider downloads never happened; 200 kB downloads stalled", "Linux nodes used MTU 9500 but cEOS routes at 1500, so large replies were dropped at the core", "All Linux lab interfaces set to MTU 1500 in zt-dev.clab.yml; first datasets kept in data/old_mtu_bug/ and re-collected"],
     ["Brute-force requests from the SIEM got no reply", "The SIEM's switch port is the SPAN destination, which is receive-only", "Inject the switch-relayed requests at the RADIUS server with the switch's NAS address"],
     ["Window after a brute force labelled normal with 9 failed logins", "FreeRADIUS delays rejects by 1 s, so late rejects spill past the attack end", "After-effect allowance drops those windows as transitions"],
+    ["Quarantine rule had no effect after reload", "FreeRADIUS reloads on SIGHUP only when the main users file changed, not an included file", "Engine touches the main users file before each reload"],
+    ["SSH command timed out right after a port bounce", "Netmiko is_alive() writes a NUL byte that leaves the Arista CLI out of step", "Check the SSH transport instead of calling is_alive()"],
     ["Little free RAM for captures", "Lab uses about 5.5 GB of 7.1 GB", "Headers-only capture, struct-based reader, Zabbix stopped during collection"],
   ], [28, 34, 38]),
 );
@@ -432,8 +448,6 @@ c.push(
 c.push(
   H1("10. Remaining Work"),
   H2("Phase 3 (detection and response)"),
-  N("**Response engine** following the Chapter 4 activity diagram: DoS gives block source IP (deny line in ZT_POLICY above the permit, optionally iptables on edge); brute-force or port scan gives quarantine; off-hours or unclassified gives alert only; plus the abstract's disable-account action (reject the user in FreeRADIUS and bounce the port).", "rem"),
-  N("**Quarantine on cEOS** - the riskiest piece: 802.1X assigns VLANs dynamically, so a plain access-VLAN change will not stick. Test the authentication-failure VLAN feature first; otherwise disable the account and bounce the port.", "rem"),
   N("**Alerts** - JSON alert and incident log, pushed to Zabbix.", "rem"),
   N("**Orchestrator** - one process that collects, scores, classifies, responds and timestamps each step to measure response time.", "rem"),
   H2("Phase 4 (validation and report)"),
@@ -466,7 +480,7 @@ c.push(
     ["archive/", "Files from earlier phases kept for history (see archive/README.md)"],
     ["demo.md", "Step-by-step panel demonstration script with exact commands"],
     ["zt_model.py", "AnomalyDetector (Isolation Forest), hybrid detect() with the brute-force rule; evaluate, train and score commands"],
-    ["zt_respond.py, test_respond.py", "Response engine (block IP, alert only, incident log, Zabbix) and its 6 offline tests"],
+    ["zt_respond.py, test_respond.py", "Response engine (block IP, quarantine, disable account, alert only, reset; incident log, Zabbix) and its 9 offline tests"],
     ["results/", "metrics.json, per-window scores and the three Chapter 5 charts"],
     ["models/zt_iforest.joblib", "Trained model (rebuild any time with python zt_model.py train)"],
   ], [45, 55]),
@@ -495,7 +509,7 @@ c.push(
   B("**1.4 Limitations**: add the reduced topology and the RAM limit."),
   H1("13. Risks and Open Questions"),
   B("**RAM**: only one 8 GiB module is detected. Check the BIOS or reseat it; a second 8 GB DDR4-2666 SODIMM would remove the main stability risk."),
-  B("**Quarantine** on a dynamically assigned 802.1X port is untested and is the riskiest remaining piece."),
+  B("**Quarantine** was the riskiest piece and is now proven (section 6.7); it relies on a port bounce, which briefly interrupts the quarantined PC, as intended."),
   B("**Zabbix history** is lost on every lab-down because the database lives inside the container."),
   B("**Time**: confirm the submission and demo dates with Mr. James Gikera and plan to finish Phase 3 with margin."),
 );

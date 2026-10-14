@@ -1,3 +1,7 @@
+# Dynamic rules written by the response engine (quarantine, disabled accounts).
+# Read first, so they override the entries below. Created empty at lab start.
+$INCLUDE /etc/freeradius/3.0/zt_dynamic
+
 bob    Cleartext-Password := "bobpass"
     Tunnel-Type = VLAN, Tunnel-Medium-Type = IEEE-802, Tunnel-Private-Group-Id = "10"
 alice  Cleartext-Password := "alicepass"
