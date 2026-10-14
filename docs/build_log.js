@@ -104,7 +104,7 @@ c.push(
     ["Baseline and attack datasets", "Done: 594 normal rows from 4 runs, 20 attack windows each for DoS, port scan, insider, off-hours and brute force"],
     ["Isolation Forest model", "Done: hybrid detector (IF + brute-force rule), 5-fold accuracy 99.0%, recall 100%, false positives 1.1%"],
     ["Brute-force attack generator", "Done: 10 to 80 failed logins per window; 5 runs collected"],
-    ["Automated response engine", "Not started (design in section 10)"],
+    ["Automated response engine", "In progress: block IP and alert-only done and tested live; quarantine and disable-account next"],
     ["Zabbix push monitoring of every node", "Done and verified: 9 nodes push 54 values per cycle, test alert raised a Problem"],
     ["Report corrections (Ch. 1 to 4)", "Not started (list in section 12)"],
     ["Backup", "Automatic: ~/Desktop/zt-project-backup is refreshed after every git commit"],
@@ -334,6 +334,22 @@ c.push(
   B("The final model (models/zt_iforest.joblib) is trained the same way as evaluated, on runs 2 and 4 of each attack (unlabelled) plus normal_01 and normal_02; on the unseen runs it detects DoS, port scan, insider and off-hours 100 % and brute force 58 %, with 1.5 % false alarms on normal_04."),
 );
 
+c.push(
+  H2("6.6 Response engine, part 1: block IP (step 3F)"),
+  P("zt_respond.py follows the Chapter 4 class diagram: NetworkActions builds the exact CLI commands (pure functions, unit-tested), AlertBuilder builds the structured alert, and ResponseEngine applies the commands over SSH with Netmiko, remembers what it has already done, writes every incident to logs/incidents.jsonl and pushes the alert, the action and the detection-to-action time to Zabbix. A Zabbix outage never stops a response."),
+  P("Block IP inserts one line per offender into ZT_POLICY on core Ethernet1, in the reserved range 71 to 79: after the guest rules and before the final permit. Infrastructure addresses (RADIUS, SIEM, switch, gateways) are refused, and a host already blocked is never acted on twice. SSH login to the switch takes about 0.75 s and the change itself about 0.10 s, so the live pipeline keeps the SSH session open."),
+  T(["Live test (14 Oct)", "Result"], [
+    ["Before", "guest-pc and staff-pc both reach the DMZ web server (HTTP 200)"],
+    ["block 10.10.30.50", "Line 71 deny ip host 10.10.30.50 any added; 5 packets matched within a second"],
+    ["After block", "guest-pc cut off (HTTP 000, its gateway unreachable); staff-pc unaffected (HTTP 200)"],
+    ["Second block of the same IP", "Ignored (already blocked)"],
+    ["unblock", "guest-pc back to HTTP 200"],
+    ["block 10.10.10.5 (RADIUS)", "Refused: infrastructure address"],
+  ], [35, 65]),
+  GAP(),
+  P("test_respond.py checks the commands, de-duplication, line reuse, state persistence, infrastructure protection and alert-only behaviour offline (6 checks, all pass)."),
+);
+
 // 6. Evidence
 c.push(
   H1("7. Verified Evidence for Chapter 5"),
@@ -450,6 +466,7 @@ c.push(
     ["archive/", "Files from earlier phases kept for history (see archive/README.md)"],
     ["demo.md", "Step-by-step panel demonstration script with exact commands"],
     ["zt_model.py", "AnomalyDetector (Isolation Forest), hybrid detect() with the brute-force rule; evaluate, train and score commands"],
+    ["zt_respond.py, test_respond.py", "Response engine (block IP, alert only, incident log, Zabbix) and its 6 offline tests"],
     ["results/", "metrics.json, per-window scores and the three Chapter 5 charts"],
     ["models/zt_iforest.joblib", "Trained model (rebuild any time with python zt_model.py train)"],
   ], [45, 55]),
