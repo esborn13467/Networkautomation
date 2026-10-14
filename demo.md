@@ -90,7 +90,7 @@ docker exec clab-zt-acc1 Cli -p 15 -c "show dot1x hosts"
 
 **Say:** "No port forwards traffic until the user proves who they are with 802.1X. The VLAN is not configured on the port. FreeRADIUS assigns it from the user's identity. That is identity-based access, never trust, always verify."
 
-### 3b. A wrong password gets nothing 🧪 (to test after data collection; takes about 90 seconds including recovery)
+### 3b. A wrong password gets nothing ✅ (tested 14 Oct; takes about 90 seconds including recovery)
 
 Log guest-pc in with a wrong password:
 
@@ -102,7 +102,7 @@ docker exec clab-zt-acc1 Cli -p 15 -c "show dot1x hosts"
 docker exec clab-zt-guest-pc ping -c 2 -W 2 10.10.30.1
 ```
 
-**Expected:** Et4 is no longer `SUCCESS` (FAILED / unauthorised) and the ping to its own gateway fails.
+**Expected:** Et4 shows `FAILED` with no VLAN, and the ping to its own gateway gets 100% packet loss.
 
 Show the RADIUS server's decision:
 
