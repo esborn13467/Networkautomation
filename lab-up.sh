@@ -4,8 +4,9 @@ source venv/bin/activate
 sudo -v || exit 1
 
 avail=$(free -m | awk '/^Mem:/{print $7}')
-if [ "$avail" -lt 4500 ]; then
-  echo "Only ${avail} MB available (need 4500). Close the browser and heavy apps, then rerun."; exit 1
+need=${MIN_MB:-4500}            # override only with nothing else heavy running, e.g. MIN_MB=4300 ./lab-up.sh
+if [ "$avail" -lt "$need" ]; then
+  echo "Only ${avail} MB available (need ${need}). Close the browser and heavy apps, then rerun."; exit 1
 fi
 
 echo "== 1/6 deploying lab (one node at a time)"
