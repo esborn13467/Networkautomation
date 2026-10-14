@@ -328,8 +328,15 @@ if __name__ == "__main__":
         start_normal(a.seconds)
         print(f"normal traffic running on {', '.join(PCS)} for {a.seconds}s (stop early: python zt_traffic.py stop)")
     elif a.cmd == "attack":
-        if a.mode in ("normal", "offhours"):
-            raise SystemExit("attack needs --mode dos, portscan, insider or bruteforce")
+        if a.mode == "normal":
+            raise SystemExit("attack needs --mode dos, portscan, insider, bruteforce or offhours")
+        if a.mode == "offhours":
+            # the host keeps behaving normally; the live pipeline treats its windows as night-time
+            import json
+            with open("/tmp/zt_night.json", "w") as f:
+                json.dump({ATTACKER["offhours"]: time.time() + a.seconds}, f)
+            print(f"{ATTACKER['offhours']} is now working 'at night' for {a.seconds}s (pipeline sets off_hours=1)")
+            raise SystemExit(0)
         setup()
         start_attack(a.mode, a.seconds, a.rate or DEFAULT_RATE[a.mode])
         print(f"attack '{a.mode}' from {ATTACKER[a.mode]} started for {a.seconds}s")

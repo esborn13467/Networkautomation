@@ -85,8 +85,8 @@ assert 'Tunnel-Private-Group-Id := "99"' in txt and "Fall-Through = Yes" in txt
 assert "alice Auth-Type := Reject" in txt and "Cleartext-Password" not in txt
 assert zr.NetworkActions.radius_rules({}) == ""
 assert zr.NetworkActions.bounce_port("Ethernet4") == ["interface Ethernet4", "shutdown", "no shutdown"]
-assert zr.NetworkActions.quarantine_ip("10.10.30.50") == "10.10.99.50"
-print("PASS RADIUS rule text, port bounce commands, quarantine address")
+assert [zr.NetworkActions.quarantine_ip(ip) for ip in ("10.10.10.50", "10.10.20.50", "10.10.30.50")] == ["10.10.99.10", "10.10.99.20", "10.10.99.30"]
+print("PASS RADIUS rule text, port bounce commands, one unique quarantine address per PC")
 
 # ---- 8. quarantine: rule written, port bounced, address moved, logged once ----
 e3 = FakeEngine()
@@ -94,9 +94,9 @@ e3.state = {"blocked": {}, "radius": {}}
 q = e3.quarantine("guest-pc", attack="portscan", reason="model")
 assert q["action"] == "QUARANTINED guest-pc" and "in VLAN 99" in q["detail"]
 assert 'guest1' in e3.rules_text and e3.sent[-1] == ("acc1", ["interface Ethernet4", "shutdown", "no shutdown"])
-assert e3.addr == ("guest-pc", "10.10.99.50", "10.10.99.1")
+assert e3.addr == ("guest-pc", "10.10.99.30", "10.10.99.1")
 assert e3.quarantine("guest-pc") is None
-print("PASS quarantine: RADIUS rule, port bounce, 10.10.99.50, no double action")
+print("PASS quarantine: RADIUS rule, port bounce, 10.10.99.30, no double action")
 
 # ---- 9. restore puts the PC back on its own address and clears the rule ----
 assert e3.restore("guest-pc") and e3.state["radius"] == {} and e3.rules_text == ""
@@ -105,4 +105,13 @@ assert not e3.restore("guest-pc")
 d = e3.disable("staff-pc", attack="insider")
 assert d["action"] == "DISABLED account alice" and e3.state["radius"] == {"alice": "disabled"}
 print("PASS release restores address; disable rejects the account")
+# state on disk at this point: staff and admin addresses blocked (test 3), alice disabled, guest free
+assert e3.contained("staff-pc") == "blocked" and e3.contained("guest-pc") is None
+e3.state["blocked"] = {}
+e3._save()
+assert e3.contained("staff-pc") == "disabled"
+from zt_pipeline import pc_for_ip
+assert [pc_for_ip(x) for x in ("10.10.99.10", "10.10.99.20", "10.10.99.30", "10.10.99.50", "10.10.30.50")] == \
+    ["admin-pc", "staff-pc", "guest-pc", None, "guest-pc"]
+print("PASS contained() reports engine actions; every quarantine address maps to exactly one PC")
 print("\nALL TESTS PASSED")

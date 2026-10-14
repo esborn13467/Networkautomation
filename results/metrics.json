@@ -148,5 +148,45 @@
       "portscan_05": 1.0
     },
     "mean_threshold": -0.017163962048260914
+  },
+  "classification": {
+    "accuracy": 1.0,
+    "confusion": {
+      "bruteforce": {
+        "bruteforce": 20,
+        "dos": 0,
+        "insider": 0,
+        "offhours": 0,
+        "portscan": 0
+      },
+      "dos": {
+        "bruteforce": 0,
+        "dos": 20,
+        "insider": 0,
+        "offhours": 0,
+        "portscan": 0
+      },
+      "insider": {
+        "bruteforce": 0,
+        "dos": 0,
+        "insider": 20,
+        "offhours": 0,
+        "portscan": 0
+      },
+      "offhours": {
+        "bruteforce": 0,
+        "dos": 0,
+        "insider": 0,
+        "offhours": 20,
+        "portscan": 0
+      },
+      "portscan": {
+        "bruteforce": 0,
+        "dos": 0,
+        "insider": 0,
+        "offhours": 0,
+        "portscan": 20
+      }
+    }
   }
 }

@@ -15,7 +15,8 @@ Actions (Chapter 4 activity diagram):
   quarantine  identity-based, as Cisco ISE does it: a RADIUS rule sends the user to
               VLAN 99, the access port is bounced so the PC logs in again (~5 s), and
               the PC is re-addressed into 10.10.99.0/24 (stand-in for DHCP, exactly as
-              lab-up.sh addresses the PCs). ZT_POLICY lines 20-40 then allow it to reach
+              lab-up.sh addresses the PCs): 10.10.99.10 admin, .20 staff, .30 guest,
+              one fixed address per PC so a quarantined host is never mistaken for another. ZT_POLICY lines 20-40 then allow it to reach
               only RADIUS (udp 1812) and the SIEM.
   disable     the account is rejected by RADIUS and the port is bounced, so the PC
               fails 802.1X and gets no network at all
@@ -23,7 +24,9 @@ Actions (Chapter 4 activity diagram):
 
 RADIUS rules live in /etc/freeradius/3.0/zt_dynamic inside the radius container,
 included at the top of radius/users. FreeRADIUS reloads on SIGHUP only when the
-main users file changed, so the engine touches it before each reload.
+main users file changed, and compares times to the second, so the engine touches it
+before each reload, spaces reloads more than a second apart and checks the log
+that the reload really happened.
 
 Usage:
   python zt_respond.py block 10.10.30.50
@@ -95,12 +98,36 @@ class NetworkActions:
 
     @staticmethod
     def quarantine_ip(normal_ip):
-        """Same host number in the quarantine subnet: 10.10.30.50 -> 10.10.99.50"""
-        return f"{QUARANTINE_NET}.{normal_ip.rsplit('.', 1)[1]}"
+        """Unique address per PC in the quarantine subnet, from its VLAN number:
+        10.10.10.50 -> 10.10.99.10, 10.10.20.50 -> 10.10.99.20, 10.10.30.50 -> 10.10.99.30"""
+        return f"{QUARANTINE_NET}.{normal_ip.split('.')[2]}"
+
+
+# Chapter 4 activity diagram: attack type -> response
+ACTION_FOR = {"dos": "block", "portscan": "quarantine", "bruteforce": "quarantine",
+              "insider": "disable", "offhours": "alert", "unclassified": "alert"}
+# Classification thresholds, far above normal traffic (99th percentile of normal windows:
+# 540 packets, 430 kB, 1 destination port, 48 new connections per minute)
+BRUTE_FAILS, SCAN_PORTS, DOS_RPM, BULK_BYTES = 5, 10, 300, 5_000_000
 
 
 class AlertBuilder:
-    """Turns a flagged window into a structured alert."""
+    """Classifies a flagged window and turns it into a structured alert."""
+
+    @staticmethod
+    def classify(row):
+        """Attack type from the window's features, checked from most to least specific."""
+        if row["failed_logins"] >= BRUTE_FAILS:
+            return "bruteforce"
+        if row["unique_dst_ports"] >= SCAN_PORTS:
+            return "portscan"
+        if row["requests_per_min"] >= DOS_RPM:
+            return "dos"
+        if row["bytes_transferred"] >= BULK_BYTES:
+            return "insider"
+        if row["off_hours"] == 1:
+            return "offhours"
+        return "unclassified"
 
     @staticmethod
     def build(host_ip, attack, action, detail="", reason="", score=None, window_start=""):
@@ -162,14 +189,37 @@ class ResponseEngine:
         return out
 
     # ----- RADIUS, ports and endpoints -----
+    _last_reload = 0.0
+
     def apply_radius_rules(self):
         text = NetworkActions.radius_rules(self.state["radius"])
         subprocess.run(["docker", "exec", "-i", RADIUS_NODE, "sh", "-c", f"cat > {RADIUS_DIR}/zt_dynamic"],
                        input=text, text=True, check=True)
-        subprocess.run(["docker", "exec", RADIUS_NODE, "sh", "-c",
-                        f"touch {RADIUS_DIR}/mods-config/files/authorize; kill -HUP $(pgrep -o freeradius)"],
-                       check=True)
-        time.sleep(0.5)                                 # let FreeRADIUS finish the reload
+        count = "grep -c 'HUP - Files loaded by a module have changed' /tmp/radius.log"
+        for attempt in range(3):
+            # FreeRADIUS compares file times to the second: never touch twice in the same second
+            wait = 1.1 - (time.time() - ResponseEngine._last_reload)
+            if wait > 0:
+                time.sleep(wait)
+            # count reloads before and after: during an attack the log grows by dozens of lines a
+            # second, so looking only at its last lines would miss the reload message
+            r = subprocess.run(["docker", "exec", RADIUS_NODE, "sh", "-c",
+                                f"a=$({count}); touch {RADIUS_DIR}/mods-config/files/authorize; "
+                                f"kill -HUP $(pgrep -o freeradius); sleep 0.4; b=$({count}); echo $a $b"],
+                               capture_output=True, text=True)
+            ResponseEngine._last_reload = time.time()
+            nums = r.stdout.split()
+            if len(nums) == 2 and int(nums[1]) > int(nums[0]):
+                return
+        raise RuntimeError(f"FreeRADIUS did not reload the rules (reload count before/after: {r.stdout.strip()})")
+
+    def contained(self, pc):
+        """Current engine action on this PC, if any: 'blocked', 'quarantine' or 'disabled'."""
+        self.state = self._load()
+        ep = ENDPOINTS[pc]
+        if ep["ip"] in self.state["blocked"]:
+            return "blocked"
+        return self.state["radius"].get(ep["user"])
 
     def bounce(self, port):
         self.push("acc1", NetworkActions.bounce_port(port))
@@ -218,6 +268,7 @@ class ResponseEngine:
 
     # ----- actions -----
     def block(self, ip, attack="manual", reason="", score=None, window_start="", t_detect=None):
+        self.state = self._load()            # another process (e.g. reset) may have changed it
         if ip in PROTECTED:
             raise SystemExit(f"refusing to block infrastructure address {ip}")
         if ip in self.state["blocked"]:
@@ -235,6 +286,7 @@ class ResponseEngine:
                                               reason, score, window_start), ms)
 
     def unblock(self, ip):
+        self.state = self._load()            # another process (e.g. reset) may have changed it
         seq = self.state["blocked"].pop(ip, None)
         if seq is None:
             return False
@@ -243,6 +295,7 @@ class ResponseEngine:
         return True
 
     def quarantine(self, pc, attack="manual", reason="", score=None, window_start="", t_detect=None):
+        self.state = self._load()            # another process (e.g. reset) may have changed it
         ep = ENDPOINTS[pc]
         if self.state["radius"].get(ep["user"]):
             return None                                 # already quarantined or disabled
@@ -261,6 +314,7 @@ class ResponseEngine:
                                               reason, score, window_start), ms)
 
     def disable(self, pc, attack="manual", reason="", score=None, window_start="", t_detect=None):
+        self.state = self._load()            # another process (e.g. reset) may have changed it
         ep = ENDPOINTS[pc]
         if self.state["radius"].get(ep["user"]) == "disabled":
             return None
@@ -278,6 +332,7 @@ class ResponseEngine:
 
     def restore(self, pc):
         """Undo quarantine or disable: remove the rule, log the PC in again, normal address."""
+        self.state = self._load()            # another process (e.g. reset) may have changed it
         ep = ENDPOINTS[pc]
         kind = self.state["radius"].pop(ep["user"], None)
         if kind is None:

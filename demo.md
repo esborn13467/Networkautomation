@@ -6,7 +6,6 @@
 > **Status of this script.** Each step is marked:
 > - ✅ **ready**: works today and has been run in the lab
 > - 🧪 **to test**: commands written but not yet run in the lab
-> - 🛠 **built later**: depends on a piece still being built (model, response engine, brute-force generator). The commands shown are the planned ones and will be finalised and rehearsed when that piece is done.
 >
 > Rehearse the whole script at least twice before the real demo, and **record a video of one full run** as a backup in case the laptop runs out of memory on the day.
 
@@ -147,29 +146,37 @@ docker exec clab-zt-edge iptables -L FORWARD -n -v
 
 ---
 
-## 4. Normal operation — 1 minute 🛠 (built later: pipeline + background traffic command)
+## 4. Normal operation — 1 minute ✅ (end-to-end tested 14 Oct, Zabbix off; rehearse once with Zabbix on)
 
-Terminal B, start the detection pipeline. It captures the mirrored traffic, computes eight features per host every 10 seconds, scores them with the Isolation Forest, and responds:
-
-```bash
-python zt_pipeline.py
-```
-
-Terminal A, start normal background traffic on all three PCs for 15 minutes (✅ command ready):
+Terminal A, start normal background traffic on all three PCs for 15 minutes:
 
 ```bash
 python zt_traffic.py background --seconds 900
 ```
 
-Zabbix page **Threat detection and response**:
+Terminal B, start the detection pipeline. It streams the mirrored traffic without gaps, computes the eight features per PC every 10 seconds, scores them with the hybrid detector, pushes the scores to Zabbix and responds:
 
-**Point at:** the three anomaly-score lines sitting low and flat below the red threshold line; no security alerts.
+```bash
+python zt_pipeline.py
+```
 
-**Say:** "The model learned normal behaviour only from normal traffic. It has never seen an attack. Legitimate users keep working and nothing is flagged."
+Every 10 seconds it prints one line, for example:
+
+```
+14:56:16  admin-pc -0.184 | staff-pc -0.135 | guest-pc -0.155
+```
+
+Negative scores are normal; the threshold is -0.019.
+
+Zabbix page **Threat detection and response**: **point at** the three anomaly-score lines sitting low, below the red threshold line, with no security alerts.
+
+**Say:** "The model was trained on unlabelled traffic. It was never told which windows were attacks; it learned what is rare. Legitimate users keep working and nothing is flagged."
+
+> Only one pipeline can run at a time; a second one refuses to start. Stop it with Ctrl+C.
 
 ---
 
-## 5. Attack 1: Denial of service → block IP — 2 minutes 🛠
+## 5. Attack 1: Denial of service → block IP — 2 minutes ✅
 
 Terminal A:
 
@@ -177,21 +184,24 @@ Terminal A:
 python zt_traffic.py attack --mode dos --seconds 40
 ```
 
-**What the panel sees, in order:**
+**Terminal B shows (real output, 14 Oct):**
 
-1. Network health page: guest-pc's packets per second jump from tens to thousands.
-2. Detection page: guest-pc's anomaly score crosses the red line within one or two 10-second windows.
-3. Terminal B: `ANOMALY guest-pc ... classified DoS -> BLOCK 10.10.30.50`.
-4. Security alerts: a new problem for zt-guest-pc; *Last response action* shows `BLOCKED 10.10.30.50`; *Detection-to-action time* shows the milliseconds.
+```
+14:56:26  staff-pc -0.184 | guest-pc +0.034  << FLAGGED (model)
+   !! guest-pc: dos -> BLOCKED 10.10.30.50 in 1.1 s after the window closed
+```
+
+On Zabbix: guest-pc's packets per second jump on *Network health*; on *Threat detection and response* its score crosses the red line, a security alert appears, and *Last response action* shows `BLOCKED 10.10.30.50`.
 
 Prove the block is real:
 
 ```bash
-docker exec clab-zt-core Cli -p 15 -c "show ip access-lists ZT_POLICY"   # new deny line for 10.10.30.50 with rising counters
+docker exec clab-zt-core Cli -p 15 -c "show ip access-lists ZT_POLICY"   # line 71 deny ip host 10.10.30.50 any, counter rising
 docker exec clab-zt-guest-pc curl -s -m 4 http://10.10.40.10 || echo BLOCKED
+docker exec clab-zt-staff-pc curl -s -m 4 http://10.10.40.10            # staff unaffected
 ```
 
-Reset before the next attack (✅ ready):
+Reset before the next attack:
 
 ```bash
 python zt_respond.py reset
@@ -199,7 +209,7 @@ python zt_respond.py reset
 
 ---
 
-## 6. Attack 2: Port scan or brute force → quarantine — 2 minutes 🛠
+## 6. Attack 2: Port scan or brute force → quarantine — 2 minutes ✅
 
 Port scan from guest-pc:
 
@@ -207,27 +217,32 @@ Port scan from guest-pc:
 python zt_traffic.py attack --mode portscan --seconds 40
 ```
 
-or brute force against RADIUS (✅ attack command ready; about 5 wrong passwords per second for guest-pc's port):
+or brute force (about 5 wrong passwords per second for guest-pc's port):
 
 ```bash
 python zt_traffic.py attack --mode bruteforce --seconds 40
-docker exec clab-zt-radius grep -c "Sent Access-Reject" /tmp/radius.log   # rejects climbing
 ```
 
-**Expected:** score crosses the line → classified `portscan` / `bruteforce` → **QUARANTINE**.
+**Terminal B shows (real output, 14 Oct):**
 
-Prove the quarantine (✅ response tested by hand 14 Oct; automatic trigger comes with the pipeline):
+```
+14:57:46  admin-pc -0.184 | staff-pc -0.086 | guest-pc +0.008  << FLAGGED (model)
+   !! guest-pc: portscan -> QUARANTINED guest-pc in 1.8 s after the window closed
+...
+14:59:16  admin-pc -0.121 | guest-pc +0.038  << FLAGGED (model+rule)
+   !! guest-pc: bruteforce -> QUARANTINED guest-pc in 1.8 s after the window closed
+```
+
+`model+rule` means both the Isolation Forest and the brute-force rule fired. guest-pc keeps appearing as flagged afterwards (now from its quarantine address) but is not acted on twice.
+
+Prove the quarantine:
 
 ```bash
 docker exec clab-zt-acc1 Cli -p 15 -c "show dot1x hosts"          # Et4 guest1 SUCCESS 99 QUARANTINE
-docker exec clab-zt-guest-pc ip -4 addr show eth1                 # now 10.10.99.50
+docker exec clab-zt-guest-pc ip -4 addr show eth1                 # now 10.10.99.30
 docker exec clab-zt-guest-pc curl -s -m 3 http://10.10.40.10 || echo "no access"
 docker exec clab-zt-core Cli -p 15 -c "show ip access-lists ZT_POLICY"   # lines 20-40 counting the quarantined traffic
 ```
-
-The same action can be triggered by hand if needed: `python zt_respond.py quarantine guest-pc`.
-
-**Optional, compromised account:** `python zt_respond.py disable staff-pc` rejects alice at RADIUS and bounces her port; `show dot1x hosts` shows Et3 `FAILED` and staff-pc has no network. `python zt_respond.py enable staff-pc` restores it.
 
 **Say:** "The device is isolated automatically. It can still reach RADIUS to re-authenticate and the SIEM for investigation, and nothing else. No administrator had to be awake."
 
@@ -237,35 +252,57 @@ Reset:
 python zt_respond.py reset
 ```
 
+**Optional, insider / compromised account (1 minute):**
+
+```bash
+python zt_traffic.py attack --mode insider --seconds 40
+```
+
+```
+15:00:46  admin-pc -0.182 | staff-pc +0.211  << FLAGGED (model) | guest-pc -0.153
+   !! staff-pc: insider -> DISABLED account alice in 1.8 s after the window closed
+```
+
+`show dot1x hosts` shows Et3 `FAILED`; staff-pc has no network until `python zt_respond.py reset`.
+
 ---
 
-## 7. Attack 3: Off-hours session → alert only — 1 minute 🛠
+## 7. Attack 3: Off-hours session → alert only — 1 minute ✅
 
 ```bash
 python zt_traffic.py attack --mode offhours --seconds 40
 ```
 
-**Expected:** staff-pc flagged, classified `off-hours`, action `ALERT ONLY`. Access is not changed.
+staff-pc keeps behaving normally, but the pipeline now treats its windows as 2 a.m.
 
-**Say:** "Not every anomaly should cut someone off. A staff member working at 2 a.m. is unusual but may be legitimate, so, as in the Chapter 4 activity diagram, the system raises an alert and leaves the decision to an analyst."
+```
+15:02:06  staff-pc +0.067  << FLAGGED (model) | guest-pc -0.184
+   !! staff-pc: offhours -> ALERT ONLY in 1.0 s after the window closed
+```
+
+Access is not changed: `curl` from staff-pc still works.
+
+**Say:** "Not every anomaly should cut someone off. A staff member working at 2 a.m. is unusual but may be legitimate, so, as in the Chapter 4 activity diagram, the system raises an alert and leaves the decision to an analyst. The same applies to anything the model flags that does not match a known attack: it is an alert, never an automatic block."
 
 ---
 
-## 8. Results — 2 minutes 🛠 (slides)
+## 8. Results — 2 minutes (slides from `results/`)
 
-Slides generated from the datasets (Chapter 5):
+From the 5-fold evaluation (`python zt_model.py evaluate`) and the end-to-end run (`results/e2e_run_20261014_1456/`):
 
-| Attack | Detection rate | False positive rate | Mean response time |
-|---|---|---|---|
-| DoS | from evaluation | from evaluation | from evaluation |
-| Port scan | | | |
-| Brute force | | | |
-| Insider | | | |
-| Off-hours | | | |
+| Attack | Detected (held-out runs) | Correct attack type | Response | Time from window close to action |
+|---|---|---|---|---|
+| DoS | 100% | 100% | block IP | 1.1 s |
+| Port scan | 100% | 100% | quarantine | 1.8 s |
+| Brute force | 100% (with rule) | 100% | quarantine | 1.8 s |
+| Insider | 100% | 100% | disable account | 1.8 s |
+| Off-hours | 100% | 100% | alert only | 1.0 s |
 
-Plus: the anomaly-score histogram (normal vs attack) and the confusion matrix.
+False alarms on normal traffic: **1.1%**, and they only ever cause an alert, never a block. Overall: accuracy 99.0%, recall 100%, F1 0.95. From the moment an attack starts to the response, add up to one 10-second window.
 
-**Say:** "Trained only on normal traffic, tested on separate runs the model had never seen, including weak attacks at five intensities."
+Charts: `results/detection_by_type.png`, `results/score_distribution.png`, `results/confusion_matrix.png`.
+
+**Say:** "The model was never given a label. It was tested on runs it had never seen, including the weakest attacks at five intensities, and it compares three designs, which is why we added one policy rule for slow password guessing."
 
 ---
 
@@ -285,11 +322,13 @@ Plus: the anomaly-score histogram (normal vs attack) and the confusion matrix.
 | Zabbix page empty | `docker start zbx-db zbx-server zbx-web`, wait 30 s; check `tail /tmp/zt_zbx_push.log` |
 | Graphs flat although traffic is running | Push loop not running: `nohup python zt_zbx_push.py run > /tmp/zt_zbx_push.log 2>&1 &` |
 | Response did not trigger | Show the pipeline output in Terminal B (score and threshold), then `python zt_respond.py reset` and repeat the attack |
+| `Another pipeline is already running` | Stop the old one with the `kill` command it prints, then start again |
+| Need everything back to normal | `python zt_respond.py reset` (unblocks, releases quarantine, re-enables accounts) |
 
 ## Likely panel questions
 
 - **Why not Packet Tracer / Cisco ISE?** Packet Tracer has no real SSH from the host, so the Python pipeline would have nothing to connect to. cEOS is real switch software; FreeRADIUS implements the same AAA and dynamic VLAN principles as ISE.
-- **Why Isolation Forest?** It is unsupervised: it learns only from normal traffic, so it can flag attacks it has never seen, and it is fast enough to score every 10 seconds.
+- **Why Isolation Forest?** It is unsupervised: it never needs labelled attacks, it isolates whatever is rare and different, and it is fast enough to score every 10 seconds. Trained on normal traffic alone it was blind to features that never vary there (failed logins, off-hours), which is why it is trained on unlabelled traffic in which attacks are rare, plus one rule for slow password guessing.
 - **How do you avoid false alarms?** The threshold was tuned on a separate normal run; off-hours anomalies only alert; windows that an attack only partly covers were excluded from evaluation so the metrics are honest.
 - **Is the traffic real?** Yes, real packets through real switch software, captured from a SPAN mirror port, as in an enterprise SOC. The traffic itself is generated, as stated in the scope (Chapter 1.4).
 - **What are the limitations?** Simulated users, one access switch, 8 GB RAM, the cEOS-lab software data plane (no ACLs on SVIs), and the off-hours flag simulated rather than waiting for night-time.

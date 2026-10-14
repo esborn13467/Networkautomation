@@ -207,7 +207,7 @@ def charts(results, summaries):
                       edgecolor=SURFACE, linewidth=2)
         for b, v in zip(bars, vals):
             ax.text(b.get_x() + b.get_width() / 2, v + 2, f"{v:.0f}%", ha="center", fontsize=7, color=INK)
-    fpr = {m: summaries[m]["overall"]["false_positive_rate"] * 100 for m in summaries}
+    fpr = {m: summaries[m]["overall"]["false_positive_rate"] * 100 for m in summaries if m != "classification"}
     ax.set_xticks(xs, [LABEL[t] for t in types])
     ax.set_ylim(0, 112)
     ax.set_ylabel("Attack windows detected (%)", color=INK2, fontsize=9)
@@ -271,10 +271,22 @@ def evaluate():
     summaries = {m: summarise(r) for m, r in results.items()}
     for m, r in results.items():
         r.to_csv(os.path.join(RESULTS, f"scores_{m}.csv"), index=False)
+    # attack-type classification (zt_respond.AlertBuilder) on every labelled attack window
+    from zt_respond import AlertBuilder
+    att = load(attack_runs([1, 2, 3, 4, 5]))
+    att = att[att.label == 1]
+    pred = att.apply(AlertBuilder.classify, axis=1)
+    summaries["classification"] = {
+        "accuracy": float((pred == att.attack_type).mean()),
+        "confusion": pd.crosstab(att.attack_type, pred).to_dict(),
+    }
     with open(os.path.join(RESULTS, "metrics.json"), "w") as f:
         json.dump(summaries, f, indent=2)
     charts(results, summaries)
     for m, s in summaries.items():
+        if m == "classification":
+            print(f"\n== attack-type classification: {s['accuracy']:.1%} of {len(att)} attack windows correct")
+            continue
         o = s["overall"]
         print(f"\n== {m} (5 folds, {o['tp'] + o['fn']} attack and {o['tn'] + o['fp']} normal test windows)")
         print(f"   accuracy {o['accuracy']:.3f}  precision {o['precision']:.3f}  recall {o['recall']:.3f}  "

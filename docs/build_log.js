@@ -105,6 +105,7 @@ c.push(
     ["Isolation Forest model", "Done: hybrid detector (IF + brute-force rule), 5-fold accuracy 99.0%, recall 100%, false positives 1.1%"],
     ["Brute-force attack generator", "Done: 10 to 80 failed logins per window; 5 runs collected"],
     ["Automated response engine", "All four actions built and tested live: block IP, quarantine, disable account, alert only"],
+    ["Live pipeline (orchestrator)", "Done: end-to-end test detects and answers all five attacks automatically in 1.0 to 1.8 s after the window closes"],
     ["Zabbix push monitoring of every node", "Done and verified: 9 nodes push 54 values per cycle, test alert raised a Problem"],
     ["Report corrections (Ch. 1 to 4)", "Not started (list in section 12)"],
     ["Backup", "Automatic: ~/Desktop/zt-project-backup is refreshed after every git commit"],
@@ -364,6 +365,25 @@ c.push(
   P("Three problems were found and fixed on the way: FreeRADIUS ignores a reload signal when only an included file changed, so the engine also touches the main users file; Netmiko's is_alive() check sends a stray byte that leaves the Arista CLI out of step and makes the next command time out, so the engine checks the SSH transport instead; and the dynamic rules file must exist before FreeRADIUS starts, so the topology now creates it. test_respond.py covers the rule text, port bounce, quarantine address, de-duplication and restore (9 checks, all pass)."),
 );
 
+c.push(
+  H2("6.8 The live pipeline (step 3F.5)"),
+  P("zt_pipeline.py (PipelineOrchestrator in the class diagram) joins the pieces. It streams the SPAN mirror from the SIEM without gaps (tcpdump writes pcap to its output and the pipeline parses it as it arrives) and tails the RADIUS log. Every 10 seconds it builds the eight features per PC, scores them with the hybrid detector, pushes the scores to Zabbix, and for each flagged PC classifies the attack and calls the response engine. The SSH sessions to both switches are opened at start, so a response does not wait for a login. A PC already contained is logged but not acted on twice, the same alert is repeated at most once a minute, a failed response is logged and never stops detection, and only one pipeline can run at a time."),
+  P("Attack classification (AlertBuilder.classify) checks, in order: 5 or more failed logins is brute force; 10 or more destination ports is a port scan; 300 or more new connections per minute is DoS; 5 MB or more in a window is insider data theft; the off-hours flag is an off-hours session; anything else is unclassified. Each threshold is far above normal traffic (99th percentile of normal windows: 1 port, 48 connections per minute, 430 kB). On all 100 labelled attack windows the classification is 100 % correct."),
+  P("The model was trained on business-hours traffic, so the pipeline treats every window as 12:00 by default. An off-hours session is simulated per host: zt_traffic.py attack --mode offhours makes the pipeline set the off-hours flag on that PC's windows for the duration."),
+  H3("End-to-end test (14 October, 14:56 to 15:03)"),
+  P("e2e_test.sh starts normal traffic on all three PCs and the pipeline, then launches each attack for 40 seconds with a reset in between. Evidence is kept in results/e2e_run_20261014_1456/."),
+  T(["Attack (launched)", "Flagged window", "Classified as", "Automatic action", "Window close to action"], [
+    ["DoS from guest-pc (14:56:30)", "14:56:26 (model)", "dos", "BLOCKED 10.10.30.50", "1.1 s"],
+    ["Port scan from guest-pc (14:57:53)", "14:57:46 (model)", "portscan", "QUARANTINED guest-pc", "1.8 s"],
+    ["Brute force on guest-pc's port (14:59:18)", "14:59:16 (model+rule)", "bruteforce", "QUARANTINED guest-pc", "1.8 s"],
+    ["Insider bulk download on staff-pc (15:00:43)", "15:00:46 (model)", "insider", "DISABLED account alice", "1.8 s"],
+    ["Off-hours session on staff-pc (15:02:09)", "15:02:06 (model)", "offhours", "ALERT ONLY", "1.0 s"],
+  ], [30, 18, 14, 22, 16]),
+  GAP(),
+  P("Two other alerts were raised, both alert-only, so nothing was disrupted: staff-pc at 15:00:36, the window in which the insider download had just begun (too little data yet to be classified as insider), and guest-pc at 15:01:06 during normal traffic, a genuine false alarm consistent with the 1.1 % false-positive rate. Each attack is answered within its first or second window, so the time from the start of an attack to the response is at most one 10-second window plus 1 to 2 seconds; most of the remaining time is the 1-second grace for late packets, the RADIUS reload and the port bounce."),
+  P("Earlier runs of the same test found three problems, all fixed: (1) all PCs end in .50, so a quarantined PC's address 10.10.99.50 was matched to the wrong PC and admin-pc was quarantined by mistake; each PC now has its own quarantine address (10.10.99.10, .20, .30) and a test checks that every address maps to exactly one PC; (2) FreeRADIUS compares file times to the second, so two quick rule changes during a reset could leave a rule in force; reloads are now spaced and confirmed by counting reload messages in its log; (3) the reload check looked only at the last lines of a log that grows by dozens of lines a second during a brute force, and its error stopped the pipeline; the check now counts reloads over the whole log and a failed response no longer stops detection."),
+);
+
 // 6. Evidence
 c.push(
   H1("7. Verified Evidence for Chapter 5"),
@@ -407,6 +427,10 @@ c.push(
     ["Window after a brute force labelled normal with 9 failed logins", "FreeRADIUS delays rejects by 1 s, so late rejects spill past the attack end", "After-effect allowance drops those windows as transitions"],
     ["Quarantine rule had no effect after reload", "FreeRADIUS reloads on SIGHUP only when the main users file changed, not an included file", "Engine touches the main users file before each reload"],
     ["SSH command timed out right after a port bounce", "Netmiko is_alive() writes a NUL byte that leaves the Arista CLI out of step", "Check the SSH transport instead of calling is_alive()"],
+    ["admin-pc quarantined by mistake in the first end-to-end test", "All PCs end in .50, so the quarantine address 10.10.99.50 matched the first PC", "One fixed quarantine address per PC (10.10.99.10/.20/.30), unit-tested"],
+    ["A rule stayed in force after reset", "FreeRADIUS compares file times to the second; two reloads within one second", "Reloads spaced over a second apart and confirmed in the log"],
+    ["Pipeline stopped during a brute force", "Reload check missed its message in a fast-growing log and the error ended the loop", "Count reload messages over the whole log; failed responses are logged and detection continues"],
+    ["Test pipelines kept running after the test", "Background processes in a script ignore Ctrl+C (SIGINT)", "Pipeline stops on SIGTERM too, and refuses to start while another is running"],
     ["Little free RAM for captures", "Lab uses about 5.5 GB of 7.1 GB", "Headers-only capture, struct-based reader, Zabbix stopped during collection"],
   ], [28, 34, 38]),
 );
@@ -448,7 +472,7 @@ c.push(
 c.push(
   H1("10. Remaining Work"),
   H2("Phase 3 (detection and response)"),
-  N("**Orchestrator** - one process that collects, scores, classifies, responds and timestamps each step to measure response time.", "rem"),
+  N("**Rehearse the full demo with Zabbix running** (the end-to-end test ran with Zabbix stopped to save RAM) and record a backup video.", "rem"),
   H2("Phase 4 (validation and report)"),
   B("Run each attack end to end several times; capture ACL counters, logs, Zabbix alerts and timing."),
   B("Compute detection accuracy, false positive rate and response time per attack."),
@@ -479,7 +503,10 @@ c.push(
     ["archive/", "Files from earlier phases kept for history (see archive/README.md)"],
     ["demo.md", "Step-by-step panel demonstration script with exact commands"],
     ["zt_model.py", "AnomalyDetector (Isolation Forest), hybrid detect() with the brute-force rule; evaluate, train and score commands"],
-    ["zt_respond.py, test_respond.py", "Response engine (block IP, quarantine, disable account, alert only, reset; incident log, Zabbix) and its 9 offline tests"],
+    ["zt_respond.py, test_respond.py", "Response engine (block IP, quarantine, disable account, alert only, reset; attack classification; incident log, Zabbix) and its 11 offline tests"],
+    ["zt_pipeline.py", "Live pipeline: continuous capture, features, scoring, classification, response, timing"],
+    ["e2e_test.sh", "8-minute end-to-end test of all five attacks"],
+    ["logs/", "incidents.jsonl (every alert and action), response_state.json, test logs"],
     ["results/", "metrics.json, per-window scores and the three Chapter 5 charts"],
     ["models/zt_iforest.joblib", "Trained model (rebuild any time with python zt_model.py train)"],
   ], [45, 55]),
