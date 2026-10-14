@@ -116,20 +116,20 @@ for cls in ["normal", "dos", "portscan", "bruteforce", "insider", "offhours"]:
                  f"{ref.unique_dst_ports.median():.0f}", f"{ref.failed_logins.median():.0f}",
                  f"{ref.requests_per_min.median():,.0f}"])
 P(f"Four normal runs of ten minutes and five runs of each attack, at five intensities, were collected after the MTU fix. Table 5.3 summarizes them. The windows of attack runs that are not attack windows belong to the other two PCs, or to the attacker before and after its attack, and are labeled normal. For comparison, 99% of normal windows have at most {p99.packet_count:,.0f} packets, {p99.bytes_transferred / 1000:,.0f} kB, {p99.unique_dst_ports:.0f} destination port and {p99.requests_per_min:.0f} new connections per minute, and no normal window has a single failed login.")
-TAB("Datasets collected (median values are for the attack windows, or for all windows of the normal runs)",
-    ["Class", "Runs", "Windows", "Attack windows", "Median packets", "Median bytes", "Median ports", "Median failed logins", "Median conn./min"],
-    rows, [0.85, 0.5, 0.75, 0.75, 0.75, 0.85, 0.6, 0.75, 0.7])
+TAB("Datasets collected; the last five columns are medians per window (of the attack windows, or of all windows in the normal runs): packets, bytes, destination ports, failed logins and new connections per minute",
+    ["Class", "Runs", "Windows", "Attack", "Packets", "Bytes", "Ports", "Fails", "Conn./min"],
+    rows, [0.95, 0.5, 0.8, 0.6, 0.7, 1.0, 0.55, 0.55, 0.85])
 P("Every attack type differs clearly from normal traffic in at least one feature: DoS in its packets and connection rate, port scan in its destination ports, brute force in its failed logins and insider data theft in its bytes. The off-hours class is normal traffic in every feature except the off-hours flag, which is what defines it.")
 
 H2("5.4 Detection Results")
 H3("5.4.1 Overall Performance")
-P("The detector was evaluated with 5-fold leave-one-run-out cross-validation (Section 3.6.3). Over the five folds, 100 attack windows and 917 normal windows were scored. Three designs were compared: the Isolation Forest trained on normal traffic only, the Isolation Forest trained on unlabeled mixed traffic in which about 9% of the windows were attacks, and the hybrid design chosen for the system, which adds one policy rule (five or more failed logins in a window) to the mixed model. Table 5.4 gives the results, calculated with Equations 3.1 to 3.5.")
+P("The detector was evaluated with 5-fold leave-one-run-out cross-validation (Section 3.6.3). Over the five folds, 100 attack windows and 917 normal windows were scored. Three designs were compared: the Isolation Forest trained on normal traffic only, the Isolation Forest trained on unlabeled mixed traffic in which about 9% of the windows were attacks, and the hybrid design chosen for the system, which adds one policy rule (five or more failed logins in a window) to the mixed model. Table 5.4 gives the results, calculated with Equations 3.1 to 3.5 and using their symbols: accuracy (Acc), precision (P), detection rate (DR), F1-score (F1) and false positive rate (FPR), with the area under the ROC curve (AUC).")
 TAB("Detection results of the three designs (5 folds, 100 attack and 917 normal windows)",
-    ["Design", "TP", "FN", "FP", "TN", "Accuracy", "Precision", "Detection rate", "F1", "FPR", "ROC-AUC"],
+    ["Design", "TP", "FN", "FP", "TN", "Acc", "P", "DR", "F1", "FPR", "AUC"],
     [[n, o[m]["tp"], o[m]["fn"], o[m]["fp"], o[m]["tn"], pct(o[m]["accuracy"]), f"{o[m]['precision']:.3f}",
       pct(o[m]["recall"]), f"{o[m]['f1']:.3f}", pct(o[m]["false_positive_rate"]), f"{o[m]['roc_auc']:.3f}"]
      for n, m in [("IF, normal only", "normal-only"), ("IF, mixed", "mixed"), ("Hybrid (chosen)", "hybrid")]],
-    [1.2, 0.4, 0.4, 0.4, 0.45, 0.7, 0.7, 0.75, 0.5, 0.5, 0.6])
+    [1.5, 0.45, 0.4, 0.4, 0.5, 0.55, 0.55, 0.55, 0.55, 0.5, 0.55])
 P(f"Trained on normal traffic only, the Isolation Forest raised few false alarms ({pct(o['normal-only']['false_positive_rate'])}) but found fewer than half of the attack windows ({pct(o['normal-only']['recall'])}). Trained on mixed traffic it found {pct(o['mixed']['recall'])} of them with a false positive rate of {pct(o['mixed']['false_positive_rate'])}, and its ROC-AUC rose from {o['normal-only']['roc_auc']:.3f} to {o['mixed']['roc_auc']:.3f}. The hybrid design found every attack window ({pct(o['hybrid']['recall'])}) without any extra false alarm, giving an accuracy of {pct(o['hybrid']['accuracy'])} and an F1-score of {o['hybrid']['f1']:.3f}. The ROC-AUC of the hybrid design is that of its Isolation Forest score, because the rule gives a yes or no answer and has no score.")
 f1 = FIG("detection_by_type.png", "fig5_1_detection_by_type.png", 6.3, "Detection rate by attack type for the three designs")
 P(f"{f1} breaks the detection rate down by attack type. DoS and insider data theft were detected by every design, because they change several features strongly at once. The normal-only model missed every brute-force and off-hours window and most port-scan windows.")
@@ -183,7 +183,7 @@ for a, label in order:
     rows.append([label, i["window_start"][11:], i["reason"], a, i["action"], f"{i['response_ms'] / 1000:.1f} s"])
 TAB("End-to-end test of the live pipeline (14 October 2026)",
     ["Attack", "Window flagged", "Fired", "Classified as", "Automatic action", "Response time"],
-    rows, [1.6, 0.9, 0.85, 0.9, 1.6, 0.85])
+    rows, [1.45, 0.85, 1.1, 0.95, 1.4, 0.75])
 times = [first[a]["response_ms"] / 1000 for a, _ in order]
 P(f"Every attack was detected in the first or second window after it started, classified correctly and answered with the action set out in the Chapter 4 activity diagram. Response times ranged from {min(times):.1f} to {max(times):.1f} seconds after the window closed. About one second of this is a deliberate wait for late packets; a block then takes about 0.1 seconds, while quarantine and disabling an account take longer because FreeRADIUS has to reload its rules and the port has to be bounced. Counting from the start of an attack, the response came within one ten-second window plus these one to two seconds, so a DoS source was cut off about eight seconds after its flood began.")
 P("Two other alerts were raised during the test, both of the alert-only kind, so no user was cut off. The first was the window in which the insider download had just begun, which did not yet hold enough data to be classified as insider. The second was a genuine false alarm on guest-pc during normal traffic, which agrees with the false positive rate of about 1% measured in Section 5.4.")

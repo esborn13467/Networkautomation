@@ -162,17 +162,17 @@
  },
  {
   "k": "table",
-  "caption": "Table 5.3: Datasets collected (median values are for the attack windows, or for all windows of the normal runs)",
+  "caption": "Table 5.3: Datasets collected; the last five columns are medians per window (of the attack windows, or of all windows in the normal runs): packets, bytes, destination ports, failed logins and new connections per minute",
   "head": [
    "Class",
    "Runs",
    "Windows",
-   "Attack windows",
-   "Median packets",
-   "Median bytes",
-   "Median ports",
-   "Median failed logins",
-   "Median conn./min"
+   "Attack",
+   "Packets",
+   "Bytes",
+   "Ports",
+   "Fails",
+   "Conn./min"
   ],
   "rows": [
    [
@@ -243,15 +243,15 @@
    ]
   ],
   "widths": [
-   0.85,
+   0.95,
    0.5,
-   0.75,
-   0.75,
-   0.75,
-   0.85,
+   0.8,
    0.6,
-   0.75,
-   0.7
+   0.7,
+   1.0,
+   0.55,
+   0.55,
+   0.85
   ]
  },
  {
@@ -268,7 +268,7 @@
  },
  {
   "k": "p",
-  "t": "The detector was evaluated with 5-fold leave-one-run-out cross-validation (Section 3.6.3). Over the five folds, 100 attack windows and 917 normal windows were scored. Three designs were compared: the Isolation Forest trained on normal traffic only, the Isolation Forest trained on unlabeled mixed traffic in which about 9% of the windows were attacks, and the hybrid design chosen for the system, which adds one policy rule (five or more failed logins in a window) to the mixed model. Table 5.4 gives the results, calculated with Equations 3.1 to 3.5."
+  "t": "The detector was evaluated with 5-fold leave-one-run-out cross-validation (Section 3.6.3). Over the five folds, 100 attack windows and 917 normal windows were scored. Three designs were compared: the Isolation Forest trained on normal traffic only, the Isolation Forest trained on unlabeled mixed traffic in which about 9% of the windows were attacks, and the hybrid design chosen for the system, which adds one policy rule (five or more failed logins in a window) to the mixed model. Table 5.4 gives the results, calculated with Equations 3.1 to 3.5 and using their symbols: accuracy (Acc), precision (P), detection rate (DR), F1-score (F1) and false positive rate (FPR), with the area under the ROC curve (AUC)."
  },
  {
   "k": "table",
@@ -279,12 +279,12 @@
    "FN",
    "FP",
    "TN",
-   "Accuracy",
-   "Precision",
-   "Detection rate",
+   "Acc",
+   "P",
+   "DR",
    "F1",
    "FPR",
-   "ROC-AUC"
+   "AUC"
   ],
   "rows": [
    [
@@ -328,17 +328,17 @@
    ]
   ],
   "widths": [
-   1.2,
-   0.4,
-   0.4,
-   0.4,
+   1.5,
    0.45,
-   0.7,
-   0.7,
-   0.75,
+   0.4,
+   0.4,
    0.5,
+   0.55,
+   0.55,
+   0.55,
+   0.55,
    0.5,
-   0.6
+   0.55
   ]
  },
  {
@@ -695,12 +695,12 @@
    ]
   ],
   "widths": [
-   1.6,
-   0.9,
+   1.45,
    0.85,
-   0.9,
-   1.6,
-   0.85
+   1.1,
+   0.95,
+   1.4,
+   0.75
   ]
  },
  {
