@@ -1,0 +1,11 @@
+# 2026-10-15 23:13:45
+$ docker exec clab-zt-acc1 Cli -p 15 -c "show dot1x hosts"
+Legend:
+* - Statically configured VLAN
++ - Internally configured VLAN
+Port       Supplicant MAC  Username                       Auth   State                    Fallback                VLAN   VLAN Name 
+---------- --------------- ------------------------------ ------ ------------------------ ----------------------- ------ ----------
+Et2        aac1.abdc.1445  bob                            EAPOL  SUCCESS                  NONE                    10     ADMIN     
+Et3        aac1.ab27.ef70  alice                          EAPOL  SUCCESS                  NONE                    20     STAFF     
+Et4        aac1.ab56.33b2  guest1                         EAPOL  SUCCESS                  NONE                    30     GUEST     
+

@@ -1,0 +1,13 @@
+# 2026-10-15 23:13:45
+$ docker ps --filter name=clab-zt --format 'table {{.Names}}\t{{.Status}}'
+NAMES              STATUS
+clab-zt-web        Up 21 minutes
+clab-zt-admin-pc   Up 21 minutes
+clab-zt-staff-pc   Up 21 minutes
+clab-zt-new-pc     Up 21 minutes
+clab-zt-siem       Up 21 minutes
+clab-zt-acc1       Up 21 minutes
+clab-zt-guest-pc   Up 21 minutes
+clab-zt-edge       Up 21 minutes
+clab-zt-core       Up 22 minutes
+clab-zt-radius     Up 22 minutes

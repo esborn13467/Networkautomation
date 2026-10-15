@@ -1,0 +1,19 @@
+# 2026-10-15 23:14:27
+$ docker exec clab-zt-core Cli -p 15 -c "show ip access-lists ZT_POLICY"
+Phone ACL bypass: disabled
+IP Access List ZT_POLICY
+        counters per-entry
+        10 permit udp any eq bootpc any eq bootps
+        20 permit udp 10.10.99.0/24 host 10.10.10.5 eq radius
+        30 permit ip 10.10.99.0/24 host 10.10.10.20
+        40 deny ip 10.10.99.0/24 any
+        50 deny ip 10.10.30.0/24 10.10.10.0/24 [match 4 packets, 0:00:04 ago]
+        60 deny ip 10.10.30.0/24 10.10.20.0/24 [match 2 packets, 0:00:08 ago]
+        70 deny ip 10.10.30.0/24 10.10.99.0/24
+        80 permit ip any any [match 5 packets, 0:00:01 ago]
+        (implicit) deny ip any any
+
+        Total rules configured: 8
+        Configured on Ingress: Et1
+        Active on     Ingress: Et1
+

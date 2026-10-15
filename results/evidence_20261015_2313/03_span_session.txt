@@ -1,0 +1,13 @@
+# 2026-10-15 23:13:45
+$ docker exec clab-zt-acc1 Cli -p 15 -c "show monitor session"
+
+Session 1 
+------------------------
+
+Sources:
+Both Interfaces:        Et2, Et3, Et4
+
+Destination Ports:
+    Et6 :  active 
+
+

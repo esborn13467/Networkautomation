@@ -1,0 +1,3 @@
+# 2026-10-15 23:15:54
+$ docker exec clab-zt-core Cli -p 15 -c "show ip access-lists ZT_POLICY" ; docker exec clab-zt-guest-pc curl -s -m 4 http://10.10.40.10 || echo BLOCKED; docker exec clab-zt-staff-pc curl -s -m 4 http://10.10.40.10
+BLOCKED

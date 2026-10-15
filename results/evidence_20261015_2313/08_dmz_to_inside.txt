@@ -1,0 +1,14 @@
+# 2026-10-15 23:14:28
+$ docker exec clab-zt-web ping -c 2 -W 2 10.10.10.5; docker exec clab-zt-edge iptables -L FORWARD -n -v
+PING 10.10.10.5 (10.10.10.5) 56(84) bytes of data.
+
+--- 10.10.10.5 ping statistics ---
+2 packets transmitted, 0 received, 100% packet loss, time 1031ms
+
+Chain FORWARD (policy DROP 0 packets, 0 bytes)
+ pkts bytes target     prot opt in     out     source               destination         
+   31  3298 ACCEPT     0    --  *      *       0.0.0.0/0            0.0.0.0/0            ctstate RELATED,ESTABLISHED
+    3   174 ACCEPT     0    --  eth1   eth0    0.0.0.0/0            0.0.0.0/0           
+    2   120 ACCEPT     6    --  eth1   eth2    0.0.0.0/0            10.10.40.10          tcp dpt:80
+    3   252 DROP       0    --  eth2   eth1    0.0.0.0/0            0.0.0.0/0           
+    0     0 ACCEPT     0    --  eth2   eth0    0.0.0.0/0            0.0.0.0/0           

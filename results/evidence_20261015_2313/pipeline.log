@@ -1,0 +1,17 @@
+ZT pipeline running: detect + respond; 3 PCs; threshold -0.019; clock business hours (12:00). Ctrl+C to stop.
+
+23:15:18  guest-pc -0.083
+23:15:28  admin-pc -0.088 | staff-pc -0.153 | guest-pc -0.068
+23:15:38  staff-pc -0.153 | guest-pc -0.068
+23:15:48  guest-pc -0.095
+23:15:58  admin-pc -0.152
+23:16:08  (no traffic)
+23:16:18  (no traffic)
+23:16:28  admin-pc -0.154
+23:16:38  (no traffic)
+23:16:48  (no traffic)
+23:16:58  (no traffic)
+23:17:08  admin-pc -0.151
+23:17:18  (no traffic)
+
+stopping
