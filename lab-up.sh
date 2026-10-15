@@ -55,6 +55,7 @@ for try in 1 2 3; do
 done
 python zbx_setup.py status | sed 's/^/   /'
 python zt_zbx_push.py setup || { sleep 20; python zt_zbx_push.py setup; }
+python zbx_email_setup.py   # emails security alerts; needs ~/.config/zt-zabbix/smtp_password
 pkill -f zt_zbx_push.py 2>/dev/null
 nohup python zt_zbx_push.py run --interval 30 > /tmp/zt_zbx_push.log 2>&1 &
 echo "   all nodes now push metrics to Zabbix every 30 s (log: /tmp/zt_zbx_push.log)"
