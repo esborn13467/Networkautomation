@@ -48,8 +48,13 @@ for i in $(seq 1 60); do
   echo -n .; sleep 5
 done
 echo
-python zbx_setup.py
-python zt_zbx_push.py setup
+# a brand-new Zabbix database is slow at first: retry the registration until every host is in
+for try in 1 2 3; do
+  python zbx_setup.py >/dev/null 2>&1 && python zbx_setup.py status | grep -q "not registered" || break
+  echo "   Zabbix still starting, retrying registration ($try/3)"; sleep 20
+done
+python zbx_setup.py status | sed 's/^/   /'
+python zt_zbx_push.py setup || { sleep 20; python zt_zbx_push.py setup; }
 pkill -f zt_zbx_push.py 2>/dev/null
 nohup python zt_zbx_push.py run --interval 30 > /tmp/zt_zbx_push.log 2>&1 &
 echo "   all nodes now push metrics to Zabbix every 30 s (log: /tmp/zt_zbx_push.log)"
