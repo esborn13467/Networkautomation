@@ -111,6 +111,9 @@ def setup():
 
 def test():
     import zt_zbx_push as zbx
+    n = zbx.close_security_problems()       # an already-open alert would swallow the test
+    if n:
+        print(f"closed {n} old security alert(s) first")
     print(zbx.send_alert("guest-pc", f"TEST email alert {time.strftime('%H:%M:%S')} (no action taken)"))
     print(f"Test alert raised on zt-guest-pc. The email should reach {RECIPIENT} within about a minute.")
     print("Check delivery in Zabbix: Reports > Action log. Close the test problem under Monitoring > Problems.")

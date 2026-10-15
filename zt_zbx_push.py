@@ -51,7 +51,8 @@ SCORE_MACRO = "{$ZT.SCORE.THRESHOLD}"
 TRIGGERS = [
     ("High packet rate on {HOST.NAME}", "last(/ZT Push/zt.net.in.pps)>1000 or last(/ZT Push/zt.net.out.pps)>1000", 3),
     ("Container CPU above 80% on {HOST.NAME}", "min(/ZT Push/zt.cpu.pct,2m)>80", 2),
-    ("Security alert on {HOST.NAME}: {ITEM.LASTVALUE}", "nodata(/ZT Push/zt.alert,30m)=0", 4),
+    # evaluated only when an alert value arrives (no timer), so each alert is its own problem
+    ("Security alert on {HOST.NAME}: {ITEM.LASTVALUE}", "length(last(/ZT Push/zt.alert))>0", 4),
     ("Anomaly score above threshold on {HOST.NAME}", "last(/ZT Push/zt.anomaly.score)>" + SCORE_MACRO, 3),
 ]
 
@@ -149,6 +150,17 @@ def send_action(node, action, response_ms):
     return send([(f"zt-{node}", "zt.action", action), (f"zt-{node}", "zt.response.ms", round(response_ms, 1))])
 
 
+def close_security_problems():
+    """Close every open 'Security alert' problem, so the next alert on a PC opens a fresh
+    problem (and, with email alerts on, sends a fresh email). Returns how many were closed."""
+    zs.login()
+    open_ = zs.api("problem.get", {"output": ["eventid"], "search": {"name": "Security alert"}})
+    if open_:
+        zs.api("event.acknowledge", {"eventids": [p["eventid"] for p in open_], "action": 1 | 4,
+                                     "message": "Closed by reset"})
+    return len(open_)
+
+
 # ---------- Zabbix configuration ----------
 def setup():
     gid = zs.api("templategroup.get", {"filter": {"name": ["Templates"]}})[0]["groupid"]
@@ -166,7 +178,7 @@ def setup():
         t = {"description": desc, "expression": expr, "priority": prio}
         if "zt.alert" in expr:
             t["manual_close"] = 1
-            t["type"] = 0          # one open problem per host until an admin closes it
+            t["type"] = 1          # every new alert opens its own problem (and its own email)
         zs.api("trigger.create", t)
     hosts = zs.api("host.get", {"filter": {"host": [f"zt-{n}" for n in NODES]}, "output": ["hostid", "host"],
                                 "selectParentTemplates": ["templateid"]})

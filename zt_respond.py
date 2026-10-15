@@ -260,7 +260,8 @@ class ResponseEngine:
             try:
                 import zt_zbx_push as zbx
                 node = alert["host"]
-                zbx.send_alert(node, f"{alert['attack']} -> {alert['action']} ({alert['reason'] or 'manual'})")
+                if "already" not in alert["attack"]:     # repeat sightings stay in the incident log only
+                    zbx.send_alert(node, f"{alert['attack']} -> {alert['action']} ({alert['reason'] or 'manual'})")
                 zbx.send_action(node, alert["action"], alert.get("response_ms") or 0)
             except Exception as e:          # Zabbix down must never stop a response
                 print("   (Zabbix not updated:", e, ")")
@@ -358,6 +359,14 @@ class ResponseEngine:
 
     def reset(self):
         """Undo everything the engine did (used between demo steps)."""
+        if self.zabbix:
+            try:
+                import zt_zbx_push as zbx
+                n = zbx.close_security_problems()
+                if n:
+                    print(f"closed {n} open security alert(s) in Zabbix")
+            except Exception as e:          # Zabbix down must never stop a reset
+                print("   (Zabbix alerts not closed:", e, ")")
         for ip in list(self.state["blocked"]):
             self.unblock(ip)
             print("unblocked", ip)

@@ -74,6 +74,7 @@ def status():
 
 def login():
     global TOKEN
+    TOKEN = None                     # user.login must be called without an old token
     TOKEN = api("user.login", {"username": USER, "password": PASSWORD})
 
 if __name__ == "__main__":
