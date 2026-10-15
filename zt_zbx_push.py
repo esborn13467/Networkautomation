@@ -154,11 +154,16 @@ def close_security_problems():
     """Close every open 'Security alert' problem, so the next alert on a PC opens a fresh
     problem (and, with email alerts on, sends a fresh email). Returns how many were closed."""
     zs.login()
-    open_ = zs.api("problem.get", {"output": ["eventid"], "search": {"name": "Security alert"}})
-    if open_:
-        zs.api("event.acknowledge", {"eventids": [p["eventid"] for p in open_], "action": 1 | 4,
-                                     "message": "Closed by reset"})
-    return len(open_)
+    open_ = zs.api("problem.get", {"output": ["eventid", "objectid"], "search": {"name": "Security alert"}})
+    if not open_:
+        return 0
+    closable = {t["triggerid"] for t in zs.api("trigger.get", {
+        "triggerids": list({p["objectid"] for p in open_}), "output": ["triggerid", "manual_close"]})
+        if t["manual_close"] == "1"}
+    ids = [p["eventid"] for p in open_ if p["objectid"] in closable]
+    if ids:
+        zs.api("event.acknowledge", {"eventids": ids, "action": 1 | 4, "message": "Closed by reset"})
+    return len(ids)
 
 
 # ---------- Zabbix configuration ----------
