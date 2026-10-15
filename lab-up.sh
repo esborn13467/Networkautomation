@@ -50,7 +50,7 @@ done
 echo
 # a brand-new Zabbix database is slow at first: retry the registration until every host is in
 for try in 1 2 3; do
-  python zbx_setup.py >/dev/null 2>&1 && python zbx_setup.py status | grep -q "not registered" || break
+  if python zbx_setup.py >/dev/null 2>&1 && ! python zbx_setup.py status | grep -q "not registered"; then break; fi
   echo "   Zabbix still starting, retrying registration ($try/3)"; sleep 20
 done
 python zbx_setup.py status | sed 's/^/   /'
