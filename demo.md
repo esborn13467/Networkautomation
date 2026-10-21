@@ -22,8 +22,6 @@
 
 ## 1. Before the panel arrives (start 15 minutes early)
 
-**Close the browser first.** The lab needs about 4.5 GB of free RAM to build.
-
 ```bash
 cd ~/Networkautomation/zt-project
 ./lab-up.sh

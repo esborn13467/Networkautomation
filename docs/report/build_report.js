@@ -512,6 +512,10 @@ REFS_ALL([
   "Zabbix. (n.d.). *Zabbix 7.0 manual*. Retrieved October 14, 2026, from https://www.zabbix.com/documentation/7.0/en/manual",
 ]);
 
+H1("Appendix");
+FIGURE("appA_turnitin_placeholder.png", 6.0, "Appendix A: Turnitin similarity report");
+FIGURE("appB_gantt.png", 6.3, "Appendix B: Gantt Chart");
+
 // ================================================================== PRELIMINARY PAGES
 const ABBREV = [
   ["AAA", "Authentication, Authorization and Accounting"], ["ACL", "Access Control List"],

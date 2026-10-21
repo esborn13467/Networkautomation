@@ -988,6 +988,80 @@ def fig4_6():
     save(fig, "fig4_6_class")
 
 
+# ======================================================================
+# Conceptual framework, flow style: how a user and an attack move through the system
+# ======================================================================
+def fig2_1_flow():
+    W, H = 6.5, 5.45
+    fig, ax = canvas(W, H)
+    fs = 7
+
+    def panel(y0, y1, title):
+        rect(ax, 0.05, y0, W - 0.1, y1 - y0, fill="white", z=0, lw=0.8)
+        text(ax, 0.15, y1 - 0.1, title, fs=8, bold=True, ha="left", va="top")
+
+    def box(cx, cy, w, h, s, fill="white"):
+        rect(ax, cx - w / 2, cy - h / 2, w, h, s, fs=fs, fill=fill, rounded=True, z=2)
+
+    # --- A. access control -------------------------------------------------
+    panel(3.85, 5.4, "Zero Trust access control")
+    y = 4.75
+    pc_icon(ax, 0.55, y)
+    text(ax, 0.55, y - 0.22, "User connects a PC\nto a switch port", fs=fs, va="top")
+    switch_icon(ax, 1.75, y)
+    text(ax, 1.75, y - 0.22, "Access switch asks for\nan 802.1X login", fs=fs, va="top")
+    server_icon(ax, 2.9, y)
+    text(ax, 2.9, y - 0.28, "FreeRADIUS checks\nusername and password", fs=fs, va="top")
+    diamond(ax, 4.15, y, 0.7, 0.5, "Verified?", fs=fs)
+    box(5.6, y, 1.45, 0.55, "Port opens in the VLAN\nof the user's role\n(admin, staff or guest)", fill=BLUE)
+    arrow(ax, [(0.8, y + 0.03), (1.42, y + 0.03)])
+    arrow(ax, [(2.07, y + 0.03), (2.73, y + 0.03)])
+    arrow(ax, [(3.07, y), (3.8, y)])
+    arrow(ax, [(4.5, y), (4.87, y)], label="Yes", fs=fs)
+    box(4.15, 4.12, 1.0, 0.36, "Port stays closed:\nno network")
+    arrow(ax, [(4.15, y - 0.25), (4.15, 4.3)], label="No", lpos=0.45, loff=(0.07, 0), lha="left", lva="center", fs=fs)
+    text(ax, 5.3, 4.12, "ZT_POLICY limits\nwhich segments\neach VLAN reaches", fs=6.5, italic=True)
+
+    # --- B. monitoring and detection ----------------------------------------
+    panel(2.3, 3.7, "Monitoring and anomaly detection")
+    y = 2.95
+    sx = 6.0
+    arrow(ax, [(sx, 4.475), (sx, y + 0.27)], label="user traffic", seg=0, lpos=0.8, loff=(-0.07, 0),
+          lha="right", lva="center", fs=6.5, italic=True)
+    server_icon(ax, sx, y + 0.05)
+    text(ax, sx, y - 0.22, "SIEM gets a copy\nof user traffic\n(SPAN)", fs=fs, va="top")
+    box(4.55, y, 1.3, 0.5, "Eight features per PC\nevery 10 seconds")
+    box(2.95, y, 1.45, 0.5, "Isolation Forest score\n+ failed-login rule", fill=BLUE)
+    diamond(ax, 1.55, y, 0.75, 0.52, "Anomaly?", fs=fs)
+    arrow(ax, [(sx - 0.17, y), (5.2, y)])
+    arrow(ax, [(3.9, y), (3.68, y)])
+    arrow(ax, [(2.22, y), (1.93, y)])
+    arrow(ax, [(1.55, y + 0.26), (1.55, 3.4), (4.55, 3.4), (4.55, y + 0.25)], label="No: keep watching",
+          seg=1, lpos=0.5, loff=(0, 0.03), fs=fs, italic=True)
+
+    # --- C. automated response ----------------------------------------------
+    panel(0.05, 2.15, "Automated response")
+    arrow(ax, [(1.55, y - 0.26), (1.55, 1.45)], label="Yes", lpos=0.15, loff=(0.07, 0), lha="left", lva="center", fs=fs)
+    box(1.55, 1.2, 1.2, 0.5, "Classify the attack\nfrom its features")
+    acts = [("DoS: block the source IP\non the core switch", 1.75),
+            ("Port scan or brute force:\nquarantine to VLAN 99", 1.27),
+            ("Insider download:\ndisable the account", 0.79),
+            ("Off-hours activity:\nalert only", 0.31)]
+    bx, cx, w, rb = 2.4, 3.55, 1.75, 4.65
+    line(ax, [(2.15, 1.2), (bx, 1.2)])
+    line(ax, [(bx, acts[0][1]), (bx, acts[-1][1])])
+    for s_, ay in acts:
+        arrow(ax, [(bx, ay), (cx - w / 2, ay)])
+        box(cx, ay, w, 0.4, s_, fill="#f4e3d7" if "alert" not in s_ else "white")
+        line(ax, [(cx + w / 2, ay), (rb, ay)])
+    line(ax, [(rb, acts[0][1]), (rb, acts[-1][1])])
+    arrow(ax, [(rb, 1.03), (4.85, 1.03)])
+    box(5.3, 1.03, 0.9, 0.62, "Zabbix dashboard\nand email alert\n(action logged)")
+    actor(ax, 6.12, 1.45, "Administrator\nreviews; every\naction can be\nreversed", fs=6.5)
+    arrow(ax, [(5.75, 1.03), (5.98, 1.03)])
+    save(fig, "fig2_1_conceptual_flow")
+
+
 FIGS = {k: v for k, v in globals().items() if k.startswith("fig") and callable(v)}
 
 if __name__ == "__main__":

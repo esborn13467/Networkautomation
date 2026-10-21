@@ -99,7 +99,8 @@
   "6.1 Conclusion",
   "6.2 Recommendations",
   "6.3 Future Work",
-  "References"
+  "References",
+  "Appendix"
  ],
  "figs": [
   "Figure 2.1: Isolating a normal and an anomalous session with random splits",
@@ -115,7 +116,9 @@
   "Figure 4.8: Network topology as built in Containerlab",
   "Figure 5.1: Detection rate by attack type for the three designs",
   "Figure 5.2: Anomaly score of every test window with the tuned threshold (mixed training)",
-  "Figure 5.3: Confusion matrix of the hybrid detector over the five folds"
+  "Figure 5.3: Confusion matrix of the hybrid detector over the five folds",
+  "Appendix A: Turnitin similarity report",
+  "Appendix B: Gantt Chart"
  ],
  "tabs": [
   "Table 2.1: Threats considered and the traffic features they affect",
