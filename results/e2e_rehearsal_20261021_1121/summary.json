@@ -1,0 +1,32 @@
+{
+  "attacks_answered_correctly": 5,
+  "per_attack": {
+    "dos": [
+      "BLOCKED 10.10.30.50",
+      1231.8
+    ],
+    "portscan": [
+      "QUARANTINED guest-pc",
+      1882.6
+    ],
+    "bruteforce": [
+      "QUARANTINED guest-pc",
+      1867.6
+    ],
+    "insider": [
+      "DISABLED account alice",
+      1901.1
+    ],
+    "offhours": [
+      "ALERT ONLY",
+      1101.6
+    ]
+  },
+  "false_alerts_alert_only": 2,
+  "wrong_drastic_actions": 0,
+  "min_free_mb": 2457,
+  "zabbix_scores": 117,
+  "zabbix_actions": 7,
+  "zabbix_security_problems": 7,
+  "paragraph": "A final rehearsal of the full demonstration repeated the end-to-end test with Zabbix and the push loop running. 5 of the 5 attacks were answered automatically with the expected action, 1.1 to 1.9 seconds after the window closed, and Zabbix received 117 anomaly scores and 7 response actions during the run; the security alerts opened 7 problems in Zabbix, one for each PC that was acted on, each staying open until an administrator closes it. 2 alert-only false alarms occurred and no user was blocked, quarantined or disabled by mistake. The lowest free memory during the run was 2457 MB."
+}

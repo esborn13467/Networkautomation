@@ -1,0 +1,23 @@
+11:21:42 ATTACK dos
+11:22:43 reset
+closed 2 open security alert(s) in Zabbix
+unblocked 10.10.30.50
+reset done
+11:23:05 ATTACK portscan
+11:24:06 reset
+closed 1 open security alert(s) in Zabbix
+guest-pc: back in its VLAN after 1.1 s
+reset done
+11:24:30 ATTACK bruteforce
+11:25:31 reset
+closed 1 open security alert(s) in Zabbix
+guest-pc: back in its VLAN after 1.1 s
+reset done
+11:25:56 ATTACK insider
+11:26:56 reset
+closed 2 open security alert(s) in Zabbix
+staff-pc: back in its VLAN after 2.2 s
+reset done
+11:27:22 ATTACK offhours
+11:28:22 end
+11:28:26 DONE
