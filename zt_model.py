@@ -36,10 +36,8 @@ Usage:
   python zt_model.py score data/dos_03.csv
 """
 import argparse
-import glob
 import json
 import os
-import sys
 
 import joblib
 import numpy as np
