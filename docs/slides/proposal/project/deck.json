@@ -1,0 +1,19 @@
+{
+  "v": 4,
+  "createdOnFiles": {"v": 1, "at": "2026-10-28T10:00:00+03:00"},
+  "lists": "css",
+  "title": "Zero Trust Network with Automated Threat Detection — Proposal Presentation",
+  "cover": "cover",
+  "order": ["cover", "concept", "literature", "design", "signal-login", "signal-response", "implementation", "architecture", "evaluation", "limits", "thanks"],
+  "sections": {
+    "intro": {"description": "Introduction: the project concept and an illustration of how it works (1.5 minutes).", "start": "cover"},
+    "literature": {"description": "Literature review across networking, systems, cloud, applications and cybersecurity (1.5 minutes).", "start": "literature"},
+    "design": {"description": "Design and analysis: the technical design and two signalling diagrams (3 minutes).", "start": "design"},
+    "implementation": {"description": "Implementation: the systems and software used and the system architecture (2 minutes).", "start": "implementation"},
+    "evaluation": {"description": "Evaluation: how the system is proven to work, and its limitations (2 minutes).", "start": "evaluation"}
+  },
+  "faces": {
+    "space-grotesk": {"family": "Space Grotesk", "href": "https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500..700&display=swap"},
+    "ibm-plex-sans": {"family": "IBM Plex Sans", "href": "https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;600&display=swap"}
+  }
+}

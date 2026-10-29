@@ -1,0 +1,17 @@
+<section id="literature" data-transition="fade" style="background:#F4F6F3;color:#1B2A3A;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:32px">
+<div style="display:flex;flex-direction:column;gap:12px">
+<p style="font-size:24px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:#0B6E6E">Literature review</p>
+<h2 style="font-family:'Space Grotesk', Arial, sans-serif;font-size:64px;font-weight:600;line-height:1.1;color:#0F1E2E">Five technology areas the project draws on</h2>
+</div>
+<table style="font-size:24px;color:#1B2A3A">
+<tr style="background:#E2EFED"><th style="width:16%">Area</th><th style="width:54%">What the literature says</th><th style="width:30%">Used in this project</th></tr>
+<tr><td><b>Networking</b></td><td>VLANs split one network into logical segments, and ACLs filter traffic between them (Baligodugula et al., 2024; Bredesen &amp; Mujeye, 2025)</td><td>A VLAN per role; the ZT_POLICY ACL on the core switch</td></tr>
+<tr style="background:#FCFDFB"><td><b>Systems</b></td><td>802.1X with RADIUS gives AAA, and dynamic VLANs follow the user’s identity, not the port (Aramide, 2024; Islam &amp; Dhanekula, 2023)</td><td>FreeRADIUS assigns VLAN 10, 20, 30 or 99</td></tr>
+<tr><td><b>Cloud</b></td><td>Cloud and remote work blurred the perimeter, pushing firms to Zero Trust (Ahmadi, 2024); containers run real network software (Chen et al., 2025)</td><td>Containerlab runs real Arista switches in containers</td></tr>
+<tr style="background:#FCFDFB"><td><b>Applications</b></td><td>Isolation Forest isolates unusual records in fewer random splits and needs no labelled attacks (Fuhnwi et al., 2023; Lakshmi et al., 2024)</td><td>Python and scikit-learn detector; Zabbix dashboard</td></tr>
+<tr><td><b>Cybersecurity</b></td><td>Signature tools miss new behaviour (Rautaray, 2025); automating the first containment step shortens response (Jones, 2025)</td><td>Automatic block, quarantine and account disable</td></tr>
+</table>
+<p style="font-size:28px;font-weight:600;color:#0B6E6E;background:#E2EFED;border-radius:12px;padding:20px 28px">Gap: Zero Trust and ML detection are studied apart, and few working systems link detection to network controls (Falowo &amp; Bou Abdo, 2026).</p>
+<div style="position:absolute;left:128px;bottom:64px;width:1664px;display:flex;flex-direction:row;justify-content:space-between"><p style="font-size:24px;color:#5A6878">Zero Trust network with automated threat detection · Esborn Kihiu</p><p style="font-size:24px;color:#5A6878">3 / 11</p></div>
+<aside>About 1 minute 30 seconds. The review covers the five areas you asked for. Networking: VLANs and ACLs are the basic tools for segmentation. Systems: 802.1X with a RADIUS server gives authentication, authorization and accounting, and with dynamic VLAN assignment the VLAN follows the user, not the port. Cloud: cloud services and remote work removed the clear inside and outside, which is why organisations are moving to Zero Trust; container technology also lets me run real switch software on one machine. Applications: Isolation Forest is an unsupervised algorithm, so it does not need labelled attack data. Cybersecurity: signature tools miss new behaviour, and automating the first response shortens the time an attacker has. The gap: these are usually studied separately, and few working systems connect detection directly to the network controls. That is what this project does.</aside>
+</section>

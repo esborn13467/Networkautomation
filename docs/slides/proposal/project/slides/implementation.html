@@ -1,0 +1,19 @@
+<section id="implementation" data-transition="fade" style="background:#F4F6F3;color:#1B2A3A;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:32px">
+<div style="display:flex;flex-direction:column;gap:12px">
+<p style="font-size:24px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:#0B6E6E">Implementation</p>
+<h2 style="font-family:'Space Grotesk', Arial, sans-serif;font-size:64px;font-weight:600;line-height:1.1;color:#0F1E2E">Real systems and software</h2>
+</div>
+<table style="font-size:26px;color:#1B2A3A">
+<tr style="background:#E2EFED"><th style="width:20%">Part</th><th style="width:38%">Software</th><th style="width:42%">What it does</th></tr>
+<tr><td><b>Lab platform</b></td><td>Containerlab on Kali Linux</td><td>Builds the whole network on one laptop</td></tr>
+<tr style="background:#FCFDFB"><td><b>Switches</b></td><td>Arista cEOS 4.36 (core, access)</td><td>VLANs, 802.1X, ACL, mirror port</td></tr>
+<tr><td><b>Identity</b></td><td>FreeRADIUS 3.0 with PEAP</td><td>Checks logins, returns the VLAN</td></tr>
+<tr style="background:#FCFDFB"><td><b>Edge and DMZ</b></td><td>Linux with iptables; web server</td><td>Default-deny firewall and DMZ</td></tr>
+<tr><td><b>Detection</b></td><td>Python, pandas, scikit-learn</td><td>Isolation Forest on 8 features per PC</td></tr>
+<tr style="background:#FCFDFB"><td><b>Response</b></td><td>Python with Netmiko (SSH)</td><td>Block, quarantine, disable, alert</td></tr>
+<tr><td><b>Monitoring</b></td><td>Zabbix with email alerts</td><td>Dashboard of scores and actions</td></tr>
+</table>
+<p style="font-size:28px;line-height:1.4;color:#4A5868">Packet Tracer was ruled out: it gives no real packets for detection and no SSH for Python to act on.</p>
+<div style="position:absolute;left:128px;bottom:64px;width:1664px;display:flex;flex-direction:row;justify-content:space-between"><p style="font-size:24px;color:#5A6878">Zero Trust network with automated threat detection · Esborn Kihiu</p><p style="font-size:24px;color:#5A6878">7 / 11</p></div>
+<aside>About 1 minute. These are the actual systems. Everything runs in Containerlab on one Kali Linux laptop, and the whole lab is rebuilt with one command. The two switches run real Arista EOS software, so they behave like production switches. FreeRADIUS does the 802.1X logins with PEAP and returns the VLAN. The edge is a Linux router with an iptables default-deny firewall and a DMZ web server. Detection is Python with pandas and scikit-learn. The response engine uses Netmiko to log in to the switches over SSH. Zabbix gives the dashboard and emails alerts. I chose real software over Packet Tracer because Packet Tracer gives no real packets for the detector and Python cannot log in to it to apply a response.</aside>
+</section>
