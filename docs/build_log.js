@@ -108,7 +108,7 @@ c.push(
     ["Live pipeline (orchestrator)", "Done: end-to-end test detects and answers all five attacks automatically in 1.0 to 1.8 s after the window closes"],
     ["Final rehearsal with Zabbix running", "Passed 14 Oct 19:08: 5 of 5 attacks answered (1.1 to 1.9 s), no false alarms, 113 scores and 6 actions in Zabbix, lowest free memory 1,272 MB"],
     ["Zabbix push monitoring of every node", "Done and verified: 9 nodes push 54 values per cycle, test alert raised a Problem"],
-    ["Report corrections (Ch. 1 to 4)", "Done by a second Claude session in docs/report/ (Chapters 1 to 4 match the built system; Chapter 6 in progress there)"],
+    ["Report corrections (Ch. 1 to 4)", "Done in docs/report/ (Chapters 1 to 4 match the built system; Chapter 6 in progress there)"],
     ["Chapter 5 (Results and Discussion)", "Written: docs/chapter5/chapter5.json, generated from results/ by build_chapter5.py, merged by the report builder"],
     ["Backup", "Automatic: ~/Desktop/zt-project-backup is refreshed after every git commit"],
   ], [40, 60]),
